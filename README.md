@@ -8,145 +8,190 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python 3.10+" />
-  <img src="https://img.shields.io/badge/Streamlit-1.42%2B-FF4B4B?style=flat-square&logo=streamlit" alt="Streamlit" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License: MIT" />
-  <img src="https://img.shields.io/badge/Version-0.1.0-cyan?style=flat-square" alt="v0.1.0" />
+  <a href="https://github.com/haydermuhib/StackCheck"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python 3.10+" /></a>
+  <a href="https://streamlit.io"><img src="https://img.shields.io/badge/Streamlit-1.42%2B-FF4B4B?style=flat-square&logo=streamlit" alt="Streamlit" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License: MIT" /></a>
+  <a href="https://github.com/haydermuhib/StackCheck/releases"><img src="https://img.shields.io/badge/Version-0.1.0-cyan?style=flat-square" alt="v0.1.0" /></a>
+  <a href="https://github.com/haydermuhib/StackCheck"><img src="https://img.shields.io/badge/Architecture-Portable%20Zero--Install-purple?style=flat-square" alt="Portable Zero-Install" /></a>
 </p>
 
 ---
 
-StackCheck is an automated job scraper, section-aware skill extractor, and interactive analytics dashboard built for data analysts, software engineers, and hiring managers. Inspired by real-world job market research methodologies (analyzing 22,000+ job ads across 100+ countries), StackCheck parses real job postings from **HiringCafe**, extracts demanded technologies with section-positional priority weighting, groups them into canonical categories, compares geographic markets, and renders interactive statistical visualizations with **Pandas**, **Matplotlib (OOP API: `fig, ax`)**, and **Seaborn**.
+## ⚡ 1-Line Universal Install
+
+Install the standalone portable binary on Linux and macOS with zero dependencies:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash
+```
+
+Once installed, launch the web dashboard instantly:
+```bash
+stackcheck
+```
+
+---
+
+## 📋 Overview
+
+StackCheck is an automated job scraper, section-aware skill extractor, and interactive analytics dashboard built for data analysts, software engineers, and hiring managers. Inspired by data-driven hiring research across 22,000+ job ads in ~100 countries, StackCheck parses live job postings from **HiringCafe**, extracts demanded technologies with section-positional priority weighting, groups them into canonical categories, compares geographic markets, and renders interactive statistical visualizations with **Pandas**, **Matplotlib (OOP API: `fig, ax`)**, and **Seaborn**.
 
 ---
 
 ## 🌟 Key Features
 
-- 🔍 **Live HiringCafe Ingestion**: Query by keywords, location (Pakistan, India, USA, UK, Germany, New Zealand, Singapore, Malaysia, Japan, South Korea, Brazil, Remote, etc.), workplace mode (*Remote / Hybrid / Onsite*), experience level (*Entry / Mid / Senior / Lead*), and custom limit.
-- 🧹 **Data Cleaning & Normalization**: Deterministic fingerprinting to eliminate duplicates across companies, filter out spam, and normalize fuzzy typo/synonym country names (*"USA", "PK", "Lahore", "Indai", "Bangalore", "NZ", "Brasil"*).
-- 🧠 **Section-Aware Skill Extraction**:
-  - Differentiates **"What we are looking for"** (Requirements) from **"What you will be doing"** (Responsibilities).
-  - Assigns decaying positional priority multipliers ($1.8\times \to 1.0\times$) so top bullet requirements receive higher weight.
-  - Optional LLM enrichment via Gemini / OpenAI for unstructured job postings.
-- 📈 **Statistical Data Visualizations (Matplotlib OOP & Seaborn)**:
-  - **Top Demanded Skills Bar Chart**: Frequency % vs requirement-weighted scores with direct data labels.
-  - **Co-Occurrence Correlation Matrix Heatmap (`sns.heatmap`)**: Discover common tech synergies (e.g., `Python + SQL`, `Tableau + Snowflake`, `FastAPI + Postgres`).
-  - **Salary Benchmarks & Error Bars**: Min, Avg, Max compensation ranges across top technologies.
-  - **Workplace & Experience Breakdown**: Pie charts and categorical bar plots.
-- 💼 **Interactive Job Explorer**: Filterable Pandas DataFrame with search, skill tags, requirement bullet points, and direct application links.
-- 🚀 **Future Roadmap & Local Exporters**: One-click export of live datasets to `CSV`, `JSON`, and executive `Markdown` briefs.
+| Capability | Description |
+| :--- | :--- |
+| 🔍 **Live HiringCafe Ingestion** | Query by keywords, location (Pakistan, USA, UK, Germany, India, Remote, etc.), workplace mode (*Remote / Hybrid / Onsite*), experience level, and limit. |
+| 🧹 **Data Cleaning & Normalization** | Deterministic SHA-256 fingerprinting to eliminate duplicate postings across companies and canonical country resolution (*"USA", "PK", "Lahore", "Indai", "NZ"*). |
+| 🧠 **Section-Aware Priority Weighting** | Separates **"What we look for"** (Requirements) from **"Day-to-day"** (Responsibilities) with decaying positional multipliers ($1.8\times \to 1.0\times$). |
+| 📊 **Statistical Visualizations** | Demanded skills frequency %, Seaborn co-occurrence heatmaps (`Python + SQL`, `Snowflake + dbt`), and min/avg/max compensation ranges. |
+| 💼 **Interactive Job Explorer** | Filterable table with multi-select filters for **Experience Level**, **Country**, and **Skills** (ANY / ALL match mode) with direct employer apply links. |
+| 📦 **Portable Standalone App** | Zero-install binary architecture (Ventoy style) with embedded Python runtime, local SQLite isolation, and in-place GitHub updater. |
 
 ---
 
-## 🚀 Quick Start
+## 🏗️ System Architecture
 
-### 1. Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/haider/StackCheck.git
-cd StackCheck
-
-# Install in virtualenv
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
+```
+┌──────────────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
+│  HiringCafe Public   │────▶│    Deduplicator &    │────▶│    Section-Aware     │
+│      API Client      │     │  Country Normalizer  │     │   Priority Weighting │
+└──────────────────────┘     └──────────────────────┘     └──────────┬───────────┘
+                                                                     │
+                                                                     ▼
+┌──────────────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
+│ Export Reports       │◀────│   Streamlit Web UI   │◀────│ Local SQLite Storage │
+│ (CSV, JSON, Markdown)│     │ & Matplotlib OOP Ax  │     │ (~/.stackcheck/*.db) │
+└──────────────────────┘     └──────────────────────┘     └──────────────────────┘
 ```
 
----
+<details>
+<summary><b>📋 Technical Component Breakdown</b></summary>
 
-## 🌐 Running the Web Dashboard
+- `src/stackcheck/client/hiringcafe.py`: Direct payload requests with pagination, workplace filters, and exponential backoff retry.
+- `src/stackcheck/client/normalizer.py`: Title classification, geographic country aliases, and duplicate fingerprinting.
+- `src/stackcheck/analyzer/rule_extractor.py`: Positional regex extractor separating requirements from general description text.
+- `src/stackcheck/analyzer/metrics.py`: Skill co-occurrence correlation matrix, salary percentiles, and weighted scoring.
+- `src/stackcheck/storage/repository.py`: Multi-workspace SQLite repository handling schema migration and upserts.
+- `src/stackcheck/launcher.py`: Desktop launcher with free port discovery and automated browser opening.
+- `src/stackcheck/updater.py`: GitHub Releases API update checker with timeout protection.
 
-Launch the browser interface with a single command:
-```bash
-streamlit run app.py
-# or
-stackcheck web
-```
-The dashboard will open automatically in your browser at `http://localhost:8501`.
-
----
-
-## ⚙️ Scriptable CLI Usage
-
-StackCheck also provides fast, scriptable CLI commands:
-
-### Scrape & Analyze
-```bash
-# Search for Data Analyst roles in Pakistan (or any country)
-stackcheck search "Data Analyst" --location "Pakistan" --workplace remote --limit 30 --export all
-
-# Search for Backend Engineers
-stackcheck search "Backend Engineer" --limit 20
-```
-
-### Export Cached Data
-```bash
-stackcheck export --format all
-```
-```
+</details>
 
 ---
 
 ## 📐 Analytical Methodology
 
-StackCheck implements the criteria popularized by creator **Baraa Khatib Salkini**:
+StackCheck implements the criteria popularized by tech hiring research:
 
-1. **Clean Dataset**: Filters out duplicates, spam, and expired job listings.
-2. **Category Grouping**: Structures required skills into explicit technical categories.
+1. **Clean Dataset**: Filters out duplicates, spam, and expired job listings using a composite title-company-location fingerprint.
+2. **Category Grouping**: Structures required skills into explicit technical categories (Languages, BI Tools, Databases, Cloud/DevOps, AI/ML).
 3. **Requirement Priority Multipliers**:
-   $$\text{Priority Weighted Score}(S) = \sum_{j \in \text{Jobs}} w_j(S)$$
-   - *Requirement Bullet #1:* $1.8\times$
+   - *Requirement Bullet #1:* $1.8\times$ (core skill)
    - *Requirement Bullet #2:* $1.5\times$
    - *Requirement Bullet #3:* $1.3\times$
    - *Day-to-day Responsibilities:* $1.2\times$
    - *General body text:* $1.0\times$
-4. **Geographic Comparison**: Analyzes how demand for tools like **Power BI** vs **Tableau** or cloud providers (**AWS** vs **Azure** vs **GCP**) varies between the USA, Europe, and India.
+   - *Nice-to-have / Preferred:* $0.7\times$
+4. **Geographic Comparison**: Analyzes how demand for tools like **Power BI** vs **Tableau** or cloud providers (**AWS** vs **Azure** vs **GCP**) varies across regional markets.
 
 ---
 
-## 📂 Project Structure
+## 🚀 Installation & Local Development
 
+<details>
+<summary><b>📋 Option A: 1-Line Standalone CLI Install (Recommended)</b></summary>
+
+```bash
+# Install to ~/.local/bin/stackcheck with desktop launcher and SVG icon
+curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash
+
+# Launch browser dashboard
+stackcheck
 ```
-StackCheck/
-├── pyproject.toml              # Modern package metadata & scripts
-├── README.md                   # Project documentation
-├── PRESENTATION.md             # Markdown slide deck & timing guide
-├── src/
-│   └── stackcheck/
-│       ├── cli.py              # CLI entrypoints (search, analyze, export, sync)
-│       ├── config.py           # Settings, DB paths, Tokyo Night palette
-│       ├── models.py           # Pydantic data models
-│       ├── client/
-│       │   ├── hiringcafe.py   # HiringCafe HTTP scraper & fallback benchmark
-│       │   └── normalizer.py   # Deduplication hash, spam filter, region resolver
-│       ├── analyzer/
-│       │   ├── taxonomy.py     # Canonical taxonomy (100+ technologies)
-│       │   ├── rule_extractor.py # Section-aware positional regex extractor
-│       │   ├── llm_extractor.py  # Optional LLM parser (Gemini/OpenAI)
-│       │   └── metrics.py      # Co-occurrence, weighted scores, geo distribution
-│       ├── storage/
-│       │   ├── db.py           # SQLite database schema
-│       │   ├── repository.py   # Job & skill CRUD operations
-│       │   ├── sync.py         # Central database & community sync client
-│       │   └── exporters.py    # JSON, CSV, Markdown exporters
-│       └── tui/
-│           ├── app.py          # Main Textual App & tab navigation
-│           ├── screens/        # Dashboard, Search, Analytics, Jobs, Community
-│           └── widgets/        # Unicode BarChart, MetricCard
-└── tests/                      # Pytest unit tests (100% pass)
+
+</details>
+
+<details>
+<summary><b>📋 Option B: Manual Virtualenv Setup (Developers)</b></summary>
+
+```bash
+# Clone repository
+git clone https://github.com/haydermuhib/StackCheck.git
+cd StackCheck
+
+# Setup virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install in editable mode
+pip install -e .
+
+# Run dashboard
+streamlit run app.py
+```
+
+</details>
+
+<details>
+<summary><b>📋 Option C: Compile Standalone Desktop Binary</b></summary>
+
+```bash
+# Build single-folder desktop distribution
+python build_app.py --onedir
+
+# Or build single-file portable executable
+python build_app.py --onefile
+```
+
+</details>
+
+---
+
+## ⚙️ CLI Usage Reference
+
+StackCheck includes scriptable CLI commands for automated data collection:
+
+```bash
+# Scrape Data Analyst roles in Pakistan (or any country)
+stackcheck scrape "Data Analyst" --location Pakistan --limit 30
+
+# Scrape Backend Engineers with remote filter
+stackcheck scrape "Backend Engineer" --workplace remote --limit 50
+
+# Export active workspace dataset to CSV, JSON, and Markdown
+stackcheck export --format all
+
+# Check for updates and download latest GitHub Release
+stackcheck update
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Running Tests
 
-Run test suite:
+StackCheck includes automated unit tests covering the parser, metrics engine, SQLite repository, web charts, and desktop launcher:
+
 ```bash
 pytest tests/
 ```
 
 ---
 
+## 📌 Quick Reference Card
+
+| Command / Resource | Purpose |
+| :--- | :--- |
+| `stackcheck` | Launch local web dashboard at `http://localhost:8501` |
+| `stackcheck scrape <title> --location <loc>` | Scrape live jobs from HiringCafe into SQLite |
+| `stackcheck export --format all` | Export dataset to `CSV`, `JSON`, and `Markdown` |
+| `stackcheck update` | In-place self-updater from GitHub Releases |
+| [index.html](index.html) | Standalone interactive presentation showcase |
+| [LICENSE](LICENSE) | MIT Open-Source License |
+
+---
+
 ## 📄 License
-MIT License. Created for job market tech stack intelligence.
+
+This project is licensed under the [MIT License](LICENSE) (c) 2026 Haider Ali.
