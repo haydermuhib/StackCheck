@@ -14,6 +14,18 @@ ROOT_DIR = Path(__file__).resolve().parent
 SRC_DIR = ROOT_DIR / "src"
 ASSETS_DIR = ROOT_DIR / "assets"
 
+# Ensure UTF-8 output encoding on Windows consoles
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 
 def get_streamlit_static_dir():
     import streamlit
@@ -22,7 +34,7 @@ def get_streamlit_static_dir():
 
 def build(onefile: bool = True):
     print("=" * 60)
-    print("  🔨 Building StackCheck Standalone Desktop Application")
+    print("  [*] Building StackCheck Standalone Desktop Application")
     print(f"  OS Platform: {platform.system()} {platform.machine()}")
     print(f"  Packaging Mode: {'Single File Executable (--onefile)' if onefile else 'Folder Bundle (--onedir)'}")
     print("=" * 60)
@@ -72,12 +84,12 @@ def build(onefile: bool = True):
     res = subprocess.run(cmd, cwd=str(ROOT_DIR))
     if res.returncode == 0:
         print("\n" + "=" * 60)
-        print("  ✔ Build successful!")
+        print("  [OK] Build successful!")
         dist_path = ROOT_DIR / "dist" / ("StackCheck.exe" if platform.system() == "Windows" else "StackCheck")
-        print(f"  📦 Generated Executable: {dist_path}")
+        print(f"  [+] Generated Executable: {dist_path}")
         print("=" * 60)
     else:
-        print(f"\n❌ Build failed with exit code {res.returncode}")
+        print(f"\n[ERROR] Build failed with exit code {res.returncode}")
         sys.exit(res.returncode)
 
 
