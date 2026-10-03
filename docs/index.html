@@ -287,6 +287,7 @@
       gap: var(--space-3);
       flex: 1;
       min-width: 0;
+      overflow: hidden;
     }
 
     .cli-dot {
@@ -300,18 +301,22 @@
 
     .cli-code {
       font-family: var(--font-mono);
-      font-size: clamp(0.78rem, 1.45vw, 0.88rem);
+      font-size: 0.92rem;
       color: var(--accent-cyan);
-      word-break: break-all;
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none !important; /* Firefox */
+      -ms-overflow-style: none !important; /* IE and Edge */
       text-align: left;
-      line-height: 1.4;
-      overflow: visible;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
     }
 
     .cli-code::-webkit-scrollbar {
-      display: none;
+      display: none !important; /* Chrome, Safari, Webkit */
+      width: 0 !important;
+      height: 0 !important;
     }
 
     .btn-copy {
@@ -654,6 +659,11 @@
       .cli-bar {
         flex-direction: column;
         align-items: stretch;
+        gap: var(--space-3);
+      }
+      .cli-prompt {
+        width: 100%;
+        overflow: hidden;
       }
       .btn-copy {
         width: 100%;
