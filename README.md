@@ -194,4 +194,4 @@ pytest tests/
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE) (c) 2026 Haider Ali.
+This project is licensed under the [MIT License](LICENSE) (c) 2026 Haider Ali Tariq.
