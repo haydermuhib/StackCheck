@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StackCheck | Tech Stack Market Intelligence</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inconsolata:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #090d16;
+      --bg-secondary: #0f172a;
+      --bg-tertiary: #162032;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      
+      --accent-cyan: #38bdf8;
+      --accent-teal: #34d399;
+      --accent-purple: #a855f7;
+      --accent-indigo: #818cf8;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      
+      --border-color: rgba(51, 65, 85, 0.7);
+      --border-highlight: rgba(56, 189, 248, 0.35);
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'Inconsolata', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      padding: 40px 20px 80px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* Header & Hero */
+    header {
+      text-align: center;
+      padding: 32px 0 40px;
+    }
+
+    .brand-logo {
+      max-width: 520px;
+      width: 100%;
+      height: auto;
+      margin-bottom: 24px;
+      filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.5));
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      max-width: 680px;
+      margin: 0 auto 20px;
+    }
+
+    .meta-bar {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 8px 20px;
+      border-radius: var(--radius-full);
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .meta-bar span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .meta-bar strong {
+      color: var(--text-primary);
+    }
+
+    /* 1-Line Installer Box */
+    .install-box {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-highlight);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      max-width: 720px;
+      margin: 0 auto;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .install-box code {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      color: var(--accent-cyan);
+      word-break: break-all;
+      text-align: left;
+    }
+
+    .copy-btn {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid var(--accent-cyan);
+      color: var(--accent-cyan);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent-cyan);
+      color: var(--bg-primary);
+    }
+
+    /* Slide Dividers */
+    hr.slide-break {
+      border: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+      margin: 56px 0;
+    }
+
+    /* Slide Sections */
+    section.slide {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 36px 40px;
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .slide-tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 20px 0 10px;
+    }
+
+    p {
+      color: var(--text-secondary);
+      font-size: 0.98rem;
+      margin-bottom: 16px;
+    }
+
+    ul, ol {
+      color: var(--text-secondary);
+      font-size: 0.96rem;
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    /* Agenda Grid */
+    .agenda-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .agenda-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .agenda-card span {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.92rem;
+    }
+
+    .agenda-time {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+    }
+
+    /* HTML Architecture Diagrams */
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 20px 0;
+      margin: 16px 0;
+    }
+
+    .arch-node {
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      min-width: 160px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .node-blue {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1.5px solid var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .node-teal {
+      background: rgba(52, 211, 153, 0.1);
+      border: 1.5px solid var(--accent-teal);
+      color: var(--accent-teal);
+    }
+
+    .node-purple {
+      background: rgba(168, 85, 247, 0.1);
+      border: 1.5px solid var(--accent-purple);
+      color: var(--accent-purple);
+    }
+
+    .node-indigo {
+      background: rgba(129, 140, 248, 0.1);
+      border: 1.5px solid var(--accent-indigo);
+      color: var(--accent-indigo);
+    }
+
+    .arch-arrow {
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      user-select: none;
+    }
+
+    /* Comparison Table */
+    .table-container {
+      overflow-x: auto;
+      margin: 20px 0;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    th {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      padding: 12px 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    td code {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent-cyan);
+    }
+
+    /* Details Accordions */
+    details {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-top: 14px;
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 12px 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+      user-select: none;
+      outline: none;
+      font-size: 0.92rem;
+      transition: background 0.15s ease;
+    }
+
+    summary:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    details[open] summary {
+      border-bottom: 1px solid var(--border-color);
+      color: var(--accent-cyan);
+    }
+
+    .details-content {
+      padding: 16px 20px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .details-content pre {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      margin: 10px 0;
+    }
+
+    /* Feature Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .feature-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+    }
+
+    .feature-card h4 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      margin-bottom: 0;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding-top: 40px;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    footer a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 20px 12px 60px;
+      }
+      section.slide {
+        padding: 24px 20px;
+      }
+      .install-box {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .copy-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header & Hero -->
+    <header>
+      <img src="assets/logo.svg" alt="StackCheck Logo" class="brand-logo" />
+      <h1>Tech Stack Market Intelligence Engine</h1>
+      <p class="subtitle">
+        Automated job scraper, section-aware skill extraction engine, and interactive analytics dashboard.
+      </p>
+
+      <div class="meta-bar">
+        <span><strong>Duration:</strong> 20 min presentation</span>
+        <span>•</span>
+        <span><strong>Audience:</strong> Engineers, Data Analysts, Recruiters</span>
+        <span>•</span>
+        <span><strong>Architecture:</strong> Portable Zero-Install (Ventoy style)</span>
+      </div>
+
+      <!-- Quick 1-line installation -->
+      <div class="install-box">
+        <code id="cmd-install">curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash</code>
+        <button class="copy-btn" onclick="copyInstallCmd()">Copy Command</button>
+      </div>
+    </header>
+
+    <hr class="slide-break">
+
+    <!-- Slide 0: Agenda -->
+    <section class="slide">
+      <span class="slide-tag">Overview</span>
+      <h2>Presentation Agenda</h2>
+      <p>A quick breakdown of topics covered in this technical review:</p>
+      
+      <div class="agenda-grid">
+        <div class="agenda-card">
+          <span>1. The Scraping Problem</span>
+          <span class="agenda-time">3 min</span>
+        </div>
+        <div class="agenda-card">
+          <span>2. End-to-End Architecture</span>
+          <span class="agenda-time">4 min</span>
+        </div>
+        <div class="agenda-card">
+          <span>3. Ingestion & Quality Filters</span>
+          <span class="agenda-time">4 min</span>
+        </div>
+        <div class="agenda-card">
+          <span>4. Section Priority Weighting</span>
+          <span class="agenda-time">4 min</span>
+        </div>
+        <div class="agenda-card">
+          <span>5. Visualizations & Job Explorer</span>
+          <span class="agenda-time">3 min</span>
+        </div>
+        <div class="agenda-card">
+          <span>6. Portable Packaging & CLI</span>
+          <span class="agenda-time">2 min</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 1: Problem & Motivation -->
+    <section class="slide">
+      <span class="slide-tag">Section 1 • 3 min</span>
+      <h2>The Problem with Keyword-Only Job Scraping</h2>
+      <p>
+        Most job scrapers run basic regex or substring matching. They treat the letter "R" inside the word "for" as a data science skill, count every mention equally, and miss whether a skill was a strict requirement or a secondary responsibility.
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Evaluation Factor</th>
+              <th>Naive Scrapers</th>
+              <th>StackCheck Intelligence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Extraction Accuracy</strong></td>
+              <td>Flat keyword counts with false positives</td>
+              <td>Word-boundary detection with canonical skill aliases</td>
+            </tr>
+            <tr>
+              <td><strong>Requirement Weight</strong></td>
+              <td>Counts every bullet point identically</td>
+              <td>Separates requirements from responsibilities with positional multipliers</td>
+            </tr>
+            <tr>
+              <td><strong>Duplicate Handling</strong></td>
+              <td>Duplicates skew percentages</td>
+              <td>Deterministic fingerprinting across titles, companies, and locations</td>
+            </tr>
+            <tr>
+              <td><strong>Direct Employer Links</strong></td>
+              <td>Generic search redirects</td>
+              <td>Preserves direct application URLs in data tables and cards</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>Core Questions Answered by StackCheck</summary>
+        <div class="details-content">
+          <ul>
+            <li>Which technologies are mandatory requirements versus secondary preferences?</li>
+            <li>How does demand shift across geographic markets (e.g. Pakistan, India, USA, UK, Germany, Remote)?</li>
+            <li>Which skills frequently appear together in the same job postings (co-occurrence synergies like Python + SQL or Snowflake + dbt)?</li>
+            <li>What are the minimum, average, and maximum compensation ranges across specific tech stacks?</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- Slide 2: End-to-End Architecture -->
+    <section class="slide">
+      <span class="slide-tag">Section 2 • 4 min</span>
+      <h2>System Architecture</h2>
+      <p>
+        StackCheck runs as a modular, local-first system. Data flows from ingestion through normalization and statistical aggregation, feeding both the browser dashboard and scriptable CLI exports.
+      </p>
+
+      <!-- Architecture Flexbox Diagram -->
+      <div class="arch-flow">
+        <div class="arch-node node-blue">
+          HiringCafe Ingestion
+          <div style="font-size: 0.78rem; opacity: 0.8; font-weight: normal; margin-top: 4px;">Public API Client</div>
+        </div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-node node-teal">
+          Cleaning & Fingerprint
+          <div style="font-size: 0.78rem; opacity: 0.8; font-weight: normal; margin-top: 4px;">Deduplication & Country Normalizer</div>
+        </div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-node node-purple">
+          Section Analyzer
+          <div style="font-size: 0.78rem; opacity: 0.8; font-weight: normal; margin-top: 4px;">1.8x Positional Weighting</div>
+        </div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-node node-indigo">
+          SQLite + Streamlit UI
+          <div style="font-size: 0.78rem; opacity: 0.8; font-weight: normal; margin-top: 4px;">Local Database & Matplotlib Charts</div>
+        </div>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <h4>Local Data Isolation</h4>
+          <p>All scraped data and project workspaces are stored in a local SQLite file (<code>~/.stackcheck/stackcheck.db</code>). No cloud accounts or telemetry required.</p>
+        </div>
+        <div class="feature-card">
+          <h4>OOP Matplotlib Engine</h4>
+          <p>Charts use explicit <code>fig, ax</code> object-oriented interfaces, avoiding thread-safety issues common to global pyplot states in multi-threaded dashboards.</p>
+        </div>
+      </div>
+
+      <details>
+        <summary>Technical Component Mapping</summary>
+        <div class="details-content">
+          <p>Components inside <code>src/stackcheck/</code>:</p>
+          <ul>
+            <li><code>client/hiringcafe.py</code>: Direct payload requests with pagination, workplace filters, and exponential backoff retry.</li>
+            <li><code>client/normalizer.py</code>: Title classification, geographic country aliases, and duplicate fingerprinting.</li>
+            <li><code>analyzer/parser.py</code>: Section splitter separating requirements from general description text.</li>
+            <li><code>analyzer/metrics.py</code>: Skill co-occurrence correlation matrix, salary percentiles, and weighted scoring.</li>
+            <li><code>storage/repository.py</code>: Multi-workspace SQLite repository handling schema migration and upserts.</li>
+            <li><code>web/app.py</code>: 3-tab Streamlit interface with multi-select filtering and CSV/JSON/Markdown exports.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- Slide 3: Ingestion & Quality Filters -->
+    <section class="slide">
+      <span class="slide-tag">Section 3 • 4 min</span>
+      <h2>Ingestion, Deduplication & Quality Filters</h2>
+      <p>
+        Real-world job boards contain spam postings, duplicate reposts across regional offices, and messy location inputs. StackCheck applies a 4-stage cleaning pipeline before storing data.
+      </p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <h4>1. Deterministic Fingerprint</h4>
+          <p>Generates a SHA-256 hash from normalized job title, company name, and location. Reposted ads are updated rather than duplicated.</p>
+        </div>
+        <div class="feature-card">
+          <h4>2. Geographic Normalizer</h4>
+          <p>Maps colloquial entries (e.g. "Lahore", "Bangalore", "Indai", "USA", "NZ") into canonical country names so regional market comparisons remain clean.</p>
+        </div>
+        <div class="feature-card">
+          <h4>3. Workplace & Level Mapping</h4>
+          <p>Classifies postings into Remote, Hybrid, or Onsite, and maps seniority into Entry, Mid, Senior, and Lead categories.</p>
+        </div>
+        <div class="feature-card">
+          <h4>4. Direct Apply Links</h4>
+          <p>Extracts and stores direct employer application links, enabling users to jump straight from the data table to the job posting.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: Section-Aware Extraction Methodology -->
+    <section class="slide">
+      <span class="slide-tag">Section 4 • 4 min</span>
+      <h2>Section-Aware Extraction & Priority Weighting</h2>
+      <p>
+        Skills mentioned in the "What We Look For" section matter significantly more than technologies casually listed under "Company Overview" or "Nice-to-Have".
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Job Section</th>
+              <th>Base Multiplier</th>
+              <th>Positional Decay</th>
+              <th>Example Insight</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Requirements / Qualifications</strong></td>
+              <td><code>1.5x</code></td>
+              <td>1.8x at top bullet down to 1.0x at bottom</td>
+              <td>Core language (e.g. Python) listed as item #1 gets peak priority score</td>
+            </tr>
+            <tr>
+              <td><strong>Responsibilities / Day-to-Day</strong></td>
+              <td><code>1.0x</code></td>
+              <td>1.2x at top bullet down to 1.0x at bottom</td>
+              <td>Tools used during workflow (e.g. Jira, Slack) get standard priority</td>
+            </tr>
+            <tr>
+              <td><strong>Nice-to-Have / Preferred</strong></td>
+              <td><code>0.7x</code></td>
+              <td>Fixed flat multiplier</td>
+              <td>Secondary tools do not distort primary core language counts</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>Co-occurrence Matrix Calculation</summary>
+        <div class="details-content">
+          <p>
+            For any pair of technologies (A and B), the co-occurrence frequency measures how often both appear together within the same job advertisement:
+          </p>
+          <pre>Co-Occurrence Score = Count(Job containing A and B) / Total Analyzed Postings</pre>
+          <p>
+            This reveals practical tech stack combinations, such as the strong affinity between <code>PostgreSQL + FastAPI</code>, or <code>dbt + Snowflake + SQL</code>.
+          </p>
+        </div>
+      </details>
+    </section>
+
+    <!-- Slide 5: Visualizations & Job Explorer -->
+    <section class="slide">
+      <span class="slide-tag">Section 5 • 3 min</span>
+      <h2>Streamlit Dashboard & Interactive Job Explorer</h2>
+      <p>
+        The user interface organizes research data into three focused tabs:
+      </p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <h4>Tab 1: Market Overview</h4>
+          <p>Top demanded skills bar chart comparing frequency percent against weighted requirement scores, accompanied by workplace mode distributions.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Tab 2: Tech Synergies & Salaries</h4>
+          <p>Seaborn correlation heatmap showing co-occurring technologies, paired with min/avg/max compensation benchmark plots.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Tab 3: Interactive Job Explorer</h4>
+          <p>Filterable table supporting multi-select filters for Experience Level, Country, and Skills (ANY or ALL match mode) with direct employer apply links and CSV/JSON export.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6: Portable Packaging & Quick Reference -->
+    <section class="slide">
+      <span class="slide-tag">Section 6 • 2 min</span>
+      <h2>Portable Packaging & Quick Reference Card</h2>
+      <p>
+        StackCheck is packaged as a portable, self-contained application (like Ventoy or Rufus). It runs without requiring system modifications, external Python installations, or administrator access.
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Command</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>stackcheck</code></td>
+              <td>Launch local browser dashboard at <code>http://localhost:8501</code></td>
+            </tr>
+            <tr>
+              <td><code>stackcheck scrape "Data Engineer" --location Pakistan</code></td>
+              <td>Scrape live job postings and store in active SQLite workspace</td>
+            </tr>
+            <tr>
+              <td><code>stackcheck export --format markdown</code></td>
+              <td>Export an executive summary brief to local markdown</td>
+            </tr>
+            <tr>
+              <td><code>stackcheck update</code></td>
+              <td>Check GitHub Releases API and update binary in place</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>Manual Local Build from Source</summary>
+        <div class="details-content">
+          <pre>git clone https://github.com/haydermuhib/StackCheck.git
+cd StackCheck
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+python build_app.py --onefile</pre>
+        </div>
+      </details>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>
+        StackCheck • Built with Python, Streamlit, Pandas & Matplotlib • <a href="https://github.com/haydermuhib/StackCheck">GitHub Repository</a>
+      </p>
+    </footer>
+
+  </div>
+
+  <script>
+    function copyInstallCmd() {
+      const text = document.getElementById('cmd-install').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = 'Copy Command'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

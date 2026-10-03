@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stackcheck"
+version = "0.1.0"
+description = "Job market tech stack intelligence engine, scraping analytics, and interactive TUI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "StackCheck Team" }
+]
+dependencies = [
+    "streamlit>=1.35.0",
+    "pandas>=2.2.0",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "rich>=13.7.0",
+    "curl_cffi>=0.16.0",
+    "click>=8.1.7",
+    "pydantic>=2.6.0"
+]
+
+[project.scripts]
+stackcheck = "stackcheck.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

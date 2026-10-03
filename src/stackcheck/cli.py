@@ -1,0 +1,300 @@
+"""
+CLI Interface for StackCheck.
+Provides commands for searching, analyzing, exporting, and launching the Web Dashboard.
+"""
+
+import sys
+import click
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
+
+from stackcheck.models import SearchQuery, WorkplaceType, ExperienceLevel, Region
+from stackcheck.client.hiringcafe import HiringCafeClient
+from stackcheck.analyzer.metrics import MetricsEngine
+from stackcheck.storage.repository import JobRepository
+from stackcheck.storage.sync import CommunitySyncClient
+from stackcheck.storage.exporters import ReportExporter
+
+console = Console()
+
+
+@click.group(invoke_without_command=True)
+@click.pass_context
+def main(ctx):
+    """StackCheck: Tech Stack Intelligence Engine & Data Analytics Dashboard."""
+    if ctx.invoked_subcommand is None:
+        # Default behavior: Launch Web Dashboard
+        from stackcheck.launcher import launch
+        launch()
+
+
+@main.command()
+def web():
+    """Launch the interactive Streamlit Web Dashboard."""
+    from stackcheck.launcher import launch
+    launch()
+
+
+@main.command()
+def update():
+    """Check for latest release updates."""
+    from stackcheck.updater import UpdateChecker
+    from stackcheck import __version__
+    console.print(f"[dim]Checking for updates... (Current version: v{__version__})[/]")
+    res = UpdateChecker.check_for_update()
+    if res and res.get("has_update"):
+        console.print(Panel(
+            f"[bold green]✨ New version v{res['latest_version']} available![/]\n\n"
+            f"[white]{res['release_title']}[/]\n"
+            f"Release page: [cyan]{res['html_url']}[/]",
+            title="Update Available",
+            border_style="green"
+        ))
+    else:
+        console.print(f"[bold green]✔ StackCheck is up to date (v{__version__}).[/]")
+
+
+
+@main.command()
+@click.argument("keywords", default="Data Analyst")
+@click.option("--location", "-l", default="", help="Filter by location (e.g. 'United States', 'London', 'India').")
+@click.option("--workplace", "-w", type=click.Choice(["remote", "hybrid", "onsite", "any"]), default="any", help="Filter by workplace type.")
+@click.option("--experience", "-e", type=click.Choice(["entry", "mid", "senior", "lead", "any"]), default="any", help="Filter by experience level.")
+@click.option("--limit", "-n", default=25, help="Number of job postings to analyze.")
+@click.option("--project", "-P", default="default", help="Project ID or name to scope this research to.")
+@click.option("--export", "-x", type=click.Choice(["json", "csv", "md", "none"]), default="none", help="Export results to file.")
+@click.option("--use-llm", is_flag=True, default=False, help="Use LLM for deep extraction (requires GEMINI_API_KEY or OPENAI_API_KEY).")
+def search(keywords, location, workplace, experience, limit, project, export, use_llm):
+    """Scrape and analyze jobs for specific keywords and filters."""
+    workplace_enum = WorkplaceType(workplace) if workplace != "any" else None
+    exp_enum = ExperienceLevel(experience) if experience != "any" else None
+
+    # Ensure project exists
+    repo = JobRepository()
+    repo.create_project(project_id=project, name=project)
+
+    query = SearchQuery(
+        keywords=keywords,
+        location=location,
+        workplace_type=workplace_enum,
+        experience_level=exp_enum,
+        limit=limit,
+        project_id=project
+    )
+
+    console.print(Panel(
+        f"[bold cyan]StackCheck Data Pipeline[/]\n"
+        f"Project: [magenta]{project}[/] | Query: [yellow]{keywords}[/] | Location: [magenta]{location or 'Global'}[/] | "
+        f"Workplace: [green]{workplace}[/] | Exp: [blue]{experience}[/] | Limit: [white]{limit}[/]",
+        border_style="cyan"
+    ))
+
+    client = HiringCafeClient(use_llm_if_available=use_llm)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TimeRemainingColumn(),
+        console=console
+    ) as progress:
+        task = progress.add_task("[cyan]Ingesting & cleaning job postings...", total=limit)
+
+        def cb(curr, total, msg):
+            progress.update(task, completed=curr, total=total, description=f"[dim]{msg}[/]")
+
+        jobs = client.search_jobs(query, progress_callback=cb)
+
+    if not jobs:
+        console.print("[bold red]No matching job postings found.[/]")
+        return
+
+    # Save to SQLite repository scoped to project
+    run_id = repo.save_search_run(query, len(jobs), project_id=project)
+    repo.save_jobs(jobs, search_run_id=run_id, project_id=project)
+
+    # Compute multidimensional analytics
+    stats = MetricsEngine.aggregate(jobs, query_keywords=keywords)
+
+    # 1. Top Skills Table
+    table = Table(title=f"🔥 Top Demanded Skills for '{keywords}' ({len(jobs)} jobs analyzed) [Project: {project}]", border_style="cyan")
+    table.add_column("Rank", justify="right", style="dim")
+    table.add_column("Technology", style="bold white")
+    table.add_column("Category", style="cyan")
+    table.add_column("Demand % (Count)", justify="right", style="green")
+    table.add_column("Priority Weighted Score", justify="right", style="yellow")
+
+    for idx, item in enumerate(stats.top_skills_overall[:15], 1):
+        table.add_row(
+            str(idx),
+            item["skill"],
+            item["category"],
+            f"{item['percentage']}% ({item['count']})",
+            str(item["weighted_score"])
+        )
+    console.print(table)
+
+    # 2. Co-occurrence Synergies Table
+    if stats.co_occurrences:
+        co_table = Table(title="🔗 Top Tech Stack Pairings (Co-Occurrences)", border_style="yellow")
+        co_table.add_column("Primary Tech", style="bold white")
+        co_table.add_column("Paired Tech", style="bold white")
+        co_table.add_column("Shared Jobs", justify="right", style="cyan")
+        co_table.add_column("Synergy %", justify="right", style="green")
+
+        for pair in stats.co_occurrences[:8]:
+            co_table.add_row(pair.skill_a, pair.skill_b, str(pair.count), f"{pair.percentage}%")
+        console.print(co_table)
+
+    # 3. Export Handling
+    if export == "json":
+        p = ReportExporter.export_json(stats, jobs)
+        console.print(f"[bold green]✔ Saved JSON report to:[/] [cyan]{p}[/]")
+    elif export == "csv":
+        p = ReportExporter.export_csv(jobs)
+        console.print(f"[bold green]✔ Saved CSV jobs to:[/] [cyan]{p}[/]")
+    elif export == "md":
+        p = ReportExporter.export_markdown(stats)
+        console.print(f"[bold green]✔ Saved Markdown summary to:[/] [cyan]{p}[/]")
+
+
+@main.command()
+@click.option("--limit", "-n", default=100, help="Number of cached jobs to aggregate.")
+@click.option("--project", "-P", default=None, help="Filter cached jobs by project ID.")
+@click.option("--region", "-r", default="All", help="Filter by region (USA, Europe, India, APAC, Latin America).")
+def analyze(limit, project, region):
+    """Generate deep metrics and insights from previously scraped jobs."""
+    repo = JobRepository()
+    jobs = repo.get_all_jobs(limit=limit, project_id=project, region=region if region != "All" else None)
+
+    if not jobs:
+        target = f"in project '{project}'" if project else "in local database"
+        console.print(f"[yellow]No cached jobs found {target}. Run `stackcheck search` first![/]")
+        return
+
+    stats = MetricsEngine.aggregate(jobs, query_keywords=f"Cached Intelligence ({len(jobs)} jobs)")
+
+    scope_title = f"Project: {project}" if project else "All Projects"
+    console.print(Panel(
+        f"[bold green]Database Summary ({scope_title})[/]\n"
+        f"Analyzed Postings: [cyan]{stats.total_jobs}[/] | Unique Companies: [yellow]{stats.unique_companies}[/] | "
+        f"Remote: [magenta]{stats.workplace_distribution.get('remote', 0)}[/] | "
+        f"Hybrid: [blue]{stats.workplace_distribution.get('hybrid', 0)}[/] | "
+        f"Onsite: [white]{stats.workplace_distribution.get('onsite', 0)}[/]",
+        border_style="green"
+    ))
+
+    # Print Category Highlights
+    for cat_name, skill_list in stats.category_breakdown.items():
+        if not skill_list:
+            continue
+        cat_table = Table(title=f"📁 {cat_name}", border_style="blue")
+        cat_table.add_column("Skill", style="bold white")
+        cat_table.add_column("Demand %", justify="right", style="green")
+        cat_table.add_column("Count", justify="right", style="cyan")
+        for s in skill_list[:6]:
+            cat_table.add_row(s["skill"], f"{s['percentage']}%", str(s["count"]))
+        console.print(cat_table)
+
+
+@main.command()
+@click.option("--format", "-f", "fmt", type=click.Choice(["json", "csv", "md", "all"]), default="all")
+@click.option("--project", "-P", default=None, help="Export jobs from specific project.")
+def export(fmt, project):
+    """Export current cached database to files."""
+    repo = JobRepository()
+    jobs = repo.get_all_jobs(limit=500, project_id=project)
+    if not jobs:
+        console.print("[yellow]No jobs in database to export.[/]")
+        return
+
+    stats = MetricsEngine.aggregate(jobs, query_keywords="All Cached Jobs")
+
+    if fmt in ("json", "all"):
+        p = ReportExporter.export_json(stats, jobs)
+        console.print(f"[bold green]✔ Exported JSON:[/] [cyan]{p}[/]")
+    if fmt in ("csv", "all"):
+        p = ReportExporter.export_csv(jobs)
+        console.print(f"[bold green]✔ Exported CSV:[/] [cyan]{p}[/]")
+    if fmt in ("md", "all"):
+        p = ReportExporter.export_markdown(stats)
+        console.print(f"[bold green]✔ Exported Markdown:[/] [cyan]{p}[/]")
+
+
+@main.group()
+def projects():
+    """Manage research projects and scopes."""
+    pass
+
+
+@projects.command("list")
+def list_projects():
+    """List all research projects with job counts."""
+    repo = JobRepository()
+    proj_list = repo.get_projects()
+    table = Table(title="🗂️ StackCheck Research Projects", border_style="cyan")
+    table.add_column("Project ID", style="bold white")
+    table.add_column("Name", style="yellow")
+    table.add_column("Description", style="dim")
+    table.add_column("Saved Jobs", justify="right", style="green")
+    table.add_column("Created", style="cyan")
+
+    for p in proj_list:
+        count = repo.count_total_jobs(project_id=p.id)
+        created_str = p.created_at.strftime("%Y-%m-%d %H:%M") if hasattr(p.created_at, "strftime") else str(p.created_at)[:19]
+        table.add_row(p.id, p.name, p.description or "-", str(count), created_str)
+    console.print(table)
+
+
+@projects.command("create")
+@click.argument("project_id")
+@click.option("--name", "-n", default=None, help="Friendly display name.")
+@click.option("--desc", "-d", default="", help="Project description.")
+def create_project(project_id, name, desc):
+    """Create a new research workspace project."""
+    repo = JobRepository()
+    p = repo.create_project(project_id=project_id, name=name or project_id, description=desc)
+    console.print(f"[bold green]✔ Created project '{p.id}' ({p.name})[/]")
+
+
+@projects.command("delete")
+@click.argument("project_id")
+@click.confirmation_option(prompt="Are you sure you want to delete this project and all its jobs?")
+def delete_project(project_id):
+    """Delete a research project and its saved jobs."""
+    if project_id == "default":
+        console.print("[bold red]Cannot delete the default project.[/]")
+        return
+    repo = JobRepository()
+    repo.delete_project(project_id)
+    console.print(f"[bold green]✔ Deleted project '{project_id}'[/]")
+
+
+@main.command()
+def sync():
+    """Sync telemetry and pull global community benchmark statistics."""
+    sync_client = CommunitySyncClient()
+    benchmarks = sync_client.fetch_community_benchmarks()
+
+    console.print(Panel(
+        f"[bold cyan]🌐 StackCheck Community Benchmark Hub[/]\n"
+        f"Total Community Jobs Dataset: [green]{benchmarks.get('total_community_jobs', 0):,}[/] | "
+        f"Last Baseline Updated: [yellow]{benchmarks.get('last_updated', 'N/A')}[/]",
+        border_style="cyan"
+    ))
+
+    table = Table(title="Global Top Demanded Technologies (Community Baseline)", border_style="green")
+    table.add_column("Rank", justify="right", style="dim")
+    table.add_column("Skill", style="bold white")
+    table.add_column("Category", style="cyan")
+    table.add_column("Global Demand %", justify="right", style="green")
+
+    for idx, item in enumerate(benchmarks.get("top_skills_global", []), 1):
+        table.add_row(str(idx), item["skill"], item["category"], f"{item['percentage']}%")
+    console.print(table)
+
+
+if __name__ == "__main__":
+    main()

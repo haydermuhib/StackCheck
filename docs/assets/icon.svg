@@ -1,0 +1,231 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Squircle Gradients -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c1322"/>
+      <stop offset="45%" stop-color="#070c17"/>
+      <stop offset="100%" stop-color="#020408"/>
+    </linearGradient>
+
+    <linearGradient id="border-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.5"/>
+      <stop offset="30%" stop-color="#818cf8" stop-opacity="0.25"/>
+      <stop offset="70%" stop-color="#3b82f6" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.9"/>
+    </linearGradient>
+
+    <!-- Layer 1 (Top Glass / Electric Cyan) -->
+    <linearGradient id="l1-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="60%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="l1-left" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#075985"/>
+    </linearGradient>
+    <linearGradient id="l1-right" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0369a1"/>
+      <stop offset="100%" stop-color="#0c4a6e"/>
+    </linearGradient>
+
+    <!-- Layer 2 (Emerald / Mint) -->
+    <linearGradient id="l2-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="60%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="l2-left" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#065f46"/>
+    </linearGradient>
+    <linearGradient id="l2-right" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#047857"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+
+    <!-- Layer 3 (Electric Violet) -->
+    <linearGradient id="l3-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="60%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="l3-left" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+    <linearGradient id="l3-right" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+
+    <!-- Layer 4 (Bottom - Royal Indigo / Cobalt) -->
+    <linearGradient id="l4-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="60%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+    <linearGradient id="l4-left" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#3730a3"/>
+    </linearGradient>
+    <linearGradient id="l4-right" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4338ca"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+
+    <!-- Checkmark Gradient -->
+    <linearGradient id="check-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#a7f3d0"/>
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="neon-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="intense-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="layer-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="0" dy="10" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.6"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="ambient-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="35" result="blur"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base Canvas -->
+  <rect x="20" y="20" width="472" height="472" rx="108" fill="url(#bg-grad)"/>
+  <rect x="20" y="20" width="472" height="472" rx="108" fill="none" stroke="url(#border-grad)" stroke-width="2.5"/>
+
+  <!-- Subtle Interior Ambient Lighting -->
+  <ellipse cx="256" cy="260" rx="150" ry="100" fill="#0284c7" opacity="0.14" filter="url(#ambient-glow)"/>
+  <ellipse cx="256" cy="330" rx="130" ry="90" fill="#7c3aed" opacity="0.12" filter="url(#ambient-glow)"/>
+
+  <!-- Orbital Data Flow Trails -->
+  <path d="M 100 240 C 90 150, 410 140, 420 240 C 430 340, 110 350, 100 240" 
+        fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="5,9" opacity="0.32"/>
+  
+  <!-- Orbiting Constellation Nodes -->
+  <circle cx="125" cy="180" r="4.5" fill="#38bdf8" filter="url(#neon-glow)"/>
+  <circle cx="410" cy="210" r="3.5" fill="#a855f7" opacity="0.8"/>
+  <circle cx="140" cy="315" r="4" fill="#34d399" filter="url(#neon-glow)"/>
+  <circle cx="380" cy="300" r="3" fill="#60a5fa" opacity="0.7"/>
+
+  <!-- ========================================== -->
+  <!-- LAYER 4 (BOTTOM - INDIGO / CLOUD BASE)     -->
+  <!-- ========================================== -->
+  <g filter="url(#layer-shadow)">
+    <!-- Left Side -->
+    <path d="M 136 340 L 256 394 L 256 410 L 136 356 Z" fill="url(#l4-left)"/>
+    <!-- Right Side -->
+    <path d="M 256 394 L 376 340 L 376 356 L 256 410 Z" fill="url(#l4-right)"/>
+    <!-- Top Face -->
+    <path d="M 256 286 L 376 340 L 256 394 L 136 340 Z" fill="url(#l4-top)"/>
+    <!-- Top Face Rim Stroke -->
+    <path d="M 256 286 L 376 340 L 256 394 L 136 340 Z" fill="none" stroke="#a5b4fc" stroke-width="1.2" opacity="0.45"/>
+  </g>
+
+  <!-- Inter-tier Data Pulse Indicators -->
+  <line x1="160" y1="315" x2="160" y2="340" stroke="#818cf8" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+  <line x1="352" y1="315" x2="352" y2="340" stroke="#818cf8" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- ========================================== -->
+  <!-- LAYER 3 (DATA & LOGIC - ELECTRIC VIOLET)   -->
+  <!-- ========================================== -->
+  <g filter="url(#layer-shadow)">
+    <!-- Left Side -->
+    <path d="M 136 285 L 256 339 L 256 355 L 136 301 Z" fill="url(#l3-left)"/>
+    <!-- Right Side -->
+    <path d="M 256 339 L 376 285 L 376 301 L 256 355 Z" fill="url(#l3-right)"/>
+    <!-- Top Face -->
+    <path d="M 256 231 L 376 285 L 256 339 L 136 285 Z" fill="url(#l3-top)"/>
+    <!-- Top Face Rim Stroke -->
+    <path d="M 256 231 L 376 285 L 256 339 L 136 285 Z" fill="none" stroke="#c4b5fd" stroke-width="1.2" opacity="0.5"/>
+  </g>
+
+  <!-- Inter-tier Data Pulse Indicators -->
+  <line x1="160" y1="260" x2="160" y2="285" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+  <line x1="352" y1="260" x2="352" y2="285" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- ========================================== -->
+  <!-- LAYER 2 (FRAMEWORKS / APIS - MINT EMERALD) -->
+  <!-- ========================================== -->
+  <g filter="url(#layer-shadow)">
+    <!-- Left Side -->
+    <path d="M 136 230 L 256 284 L 256 300 L 136 246 Z" fill="url(#l2-left)"/>
+    <!-- Right Side -->
+    <path d="M 256 284 L 376 230 L 376 246 L 256 300 Z" fill="url(#l2-right)"/>
+    <!-- Top Face -->
+    <path d="M 256 176 L 376 230 L 256 284 L 136 230 Z" fill="url(#l2-top)"/>
+    <!-- Top Face Rim Stroke -->
+    <path d="M 256 176 L 376 230 L 256 284 L 136 230 Z" fill="none" stroke="#6ee7b7" stroke-width="1.2" opacity="0.6"/>
+  </g>
+
+  <!-- Inter-tier Data Pulse Indicators -->
+  <line x1="160" y1="205" x2="160" y2="230" stroke="#34d399" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <line x1="352" y1="205" x2="352" y2="230" stroke="#34d399" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- ========================================== -->
+  <!-- LAYER 1 (INTELLIGENCE / CYAN GLASS APEX)   -->
+  <!-- ========================================== -->
+  <g filter="url(#layer-shadow)">
+    <!-- Left Side -->
+    <path d="M 136 175 L 256 229 L 256 245 L 136 191 Z" fill="url(#l1-left)"/>
+    <!-- Right Side -->
+    <path d="M 256 229 L 376 175 L 376 191 L 256 245 Z" fill="url(#l1-right)"/>
+    <!-- Top Face -->
+    <path d="M 256 121 L 376 175 L 256 229 L 136 175 Z" fill="url(#l1-top)"/>
+    
+    <!-- Glass Specular Highlight Inner Reflection -->
+    <path d="M 256 133 L 350 175 L 256 217 L 162 175 Z" fill="#ffffff" opacity="0.16"/>
+    <!-- Top Face Precision Bevel Rim -->
+    <path d="M 256 121 L 376 175 L 256 229 L 136 175 Z" fill="none" stroke="#bae6fd" stroke-width="1.8" opacity="0.85"/>
+  </g>
+
+  <!-- Top Glass Sheen Edge -->
+  <line x1="148" y1="175" x2="256" y2="227" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" opacity="0.75"/>
+
+  <!-- ========================================== -->
+  <!-- THE "CHECK" — FLOATING NEON VERIFICATION   -->
+  <!-- ========================================== -->
+  <!-- Ambient glow beneath checkmark -->
+  <ellipse cx="256" cy="175" rx="75" ry="38" fill="#38bdf8" opacity="0.35" filter="url(#intense-glow)"/>
+
+  <!-- Checkmark Path Shadow -->
+  <path d="M 198 168 L 242 202 L 320 132" 
+        fill="none" stroke="#000000" stroke-width="17" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+
+  <!-- Checkmark Outer Neon Glow -->
+  <path d="M 198 165 L 242 199 L 320 129" 
+        fill="none" stroke="#38bdf8" stroke-width="17" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)" opacity="0.9"/>
+
+  <!-- Checkmark Core Stroke -->
+  <path d="M 198 165 L 242 199 L 320 129" 
+        fill="none" stroke="url(#check-grad)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Checkmark Specular Hotspot Highlight -->
+  <path d="M 198 165 L 242 199 L 320 129" 
+        fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+
+  <!-- Verification Spark Node -->
+  <circle cx="320" cy="129" r="3.5" fill="#ffffff" filter="url(#neon-glow)"/>
+</svg>

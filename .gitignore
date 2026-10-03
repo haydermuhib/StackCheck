@@ -1,0 +1,28 @@
+# Python virtualenv & caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# PyInstaller build artifacts
+build/
+dist/
+*.spec
+
+# SQLite database & runtime data
+*.db
+*.db-journal
+stackcheck.db
+exports/
+.stackcheck/
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
