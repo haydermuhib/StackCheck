@@ -67,6 +67,7 @@ def build(onefile: bool = True):
         "--collect-all=httpx",
         "--copy-metadata=rich",
         "--copy-metadata=click",
+        "--copy-metadata=streamlit",
         "--hidden-import=pandas",
         "--hidden-import=numpy",
         "--hidden-import=requests",

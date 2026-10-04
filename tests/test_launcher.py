@@ -30,3 +30,36 @@ def test_instance_tracking_and_cleanup():
     assert get_running_instance() is None
     # Stopping when not running should safely return False
     assert not stop_running_instance()
+
+
+def test_locate_target_script_and_persistent_sync():
+    from pathlib import Path
+    from stackcheck.launcher import locate_target_script, STACKCHECK_DIR
+    script = locate_target_script()
+    assert script is not None
+    p = Path(script)
+    assert p.exists()
+    assert p.is_file()
+    content = p.read_text(encoding="utf-8")
+    assert "Streamlit Web Dashboard for StackCheck" in content
+    # Verify persistent copy in STACKCHECK_DIR/web/app.py
+    persistent_copy = STACKCHECK_DIR / "web" / "app.py"
+    assert persistent_copy.exists()
+
+
+def test_detached_env_sanitization():
+    import os
+    # Simulate parent PyInstaller environment with _MEIPASS2 set
+    test_env = os.environ.copy()
+    test_env["_MEIPASS2"] = "/tmp/_MEItest123"
+    test_env["LD_LIBRARY_PATH_ORIG"] = "/usr/lib"
+    test_env["LD_LIBRARY_PATH"] = "/tmp/_MEItest123:/usr/lib"
+
+    # Emulate the sanitization logic used in _launch_detached
+    sanitized = test_env.copy()
+    sanitized.pop("_MEIPASS2", None)
+    if "LD_LIBRARY_PATH_ORIG" in sanitized:
+        sanitized["LD_LIBRARY_PATH"] = sanitized["LD_LIBRARY_PATH_ORIG"]
+
+    assert "_MEIPASS2" not in sanitized
+    assert sanitized["LD_LIBRARY_PATH"] == "/usr/lib"

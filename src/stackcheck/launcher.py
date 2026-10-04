@@ -109,16 +109,74 @@ console = Console()
 
 
 def locate_target_script() -> Optional[str]:
-    """Find the target Streamlit entrypoint app.py."""
+    """
+    Find the target Streamlit entrypoint app.py and ensure persistent availability.
+    Syncs the script and charts to STACKCHECK_DIR/web so that it is never lost when
+    temporary PyInstaller _MEI directories are cleaned up by parent process exit.
+    """
     candidate_paths = [
         BASE_DIR / "src" / "stackcheck" / "web" / "app.py",
         BASE_DIR / "stackcheck" / "web" / "app.py",
         Path(__file__).resolve().parent / "web" / "app.py",
         Path(os.getcwd()) / "app.py"
     ]
+    source_app = None
     for p in candidate_paths:
         if p.exists():
-            return str(p)
+            source_app = p
+            break
+
+    if source_app:
+        try:
+            target_dir = STACKCHECK_DIR / "web"
+            target_dir.mkdir(parents=True, exist_ok=True)
+            persistent_app = target_dir / "app.py"
+
+            content = source_app.read_text(encoding="utf-8")
+            if not persistent_app.exists() or persistent_app.read_text(encoding="utf-8") != content:
+                persistent_app.write_text(content, encoding="utf-8")
+
+            source_charts = source_app.parent / "charts.py"
+            if source_charts.exists():
+                persistent_charts = target_dir / "charts.py"
+                charts_content = source_charts.read_text(encoding="utf-8")
+                if not persistent_charts.exists() or persistent_charts.read_text(encoding="utf-8") != charts_content:
+                    persistent_charts.write_text(charts_content, encoding="utf-8")
+
+            # Also ensure assets (logo, icon) are mirrored to STACKCHECK_DIR/assets
+            source_assets = None
+            if hasattr(sys, "_MEIPASS"):
+                p_mei = Path(sys._MEIPASS) / "assets"
+                if p_mei.exists():
+                    source_assets = p_mei
+            if not source_assets:
+                for candidate_asset in [
+                    BASE_DIR / "assets",
+                    source_app.parent.parent.parent.parent / "assets",
+                    source_app.parent.parent / "assets",
+                    Path.cwd() / "assets"
+                ]:
+                    if candidate_asset.exists():
+                        source_assets = candidate_asset
+                        break
+
+            if source_assets and source_assets.exists():
+                target_assets_dir = STACKCHECK_DIR / "assets"
+                target_assets_dir.mkdir(parents=True, exist_ok=True)
+                for asset_file in source_assets.glob("*"):
+                    if asset_file.is_file():
+                        dest_file = target_assets_dir / asset_file.name
+                        if not dest_file.exists() or dest_file.stat().st_size != asset_file.stat().st_size:
+                            dest_file.write_bytes(asset_file.read_bytes())
+
+            return str(persistent_app)
+        except Exception:
+            return str(source_app)
+
+    cached_app = STACKCHECK_DIR / "web" / "app.py"
+    if cached_app.exists():
+        return str(cached_app)
+
     return None
 
 
@@ -225,11 +283,21 @@ def _launch_detached():
 
     log_file = open(log_file_path, "a", encoding="utf-8")
 
+    env = os.environ.copy()
+    # In PyInstaller one-file bundles, child processes inherit _MEIPASS2, which points to
+    # the parent's temporary folder. When the parent exits, PyInstaller cleans up that folder,
+    # causing FileNotFoundError on child accesses. Removing _MEIPASS2 ensures the child
+    # extracts and manages its own independent temporary directory.
+    env.pop("_MEIPASS2", None)
+    if "LD_LIBRARY_PATH_ORIG" in env:
+        env["LD_LIBRARY_PATH"] = env["LD_LIBRARY_PATH_ORIG"]
+
     kwargs: Dict[str, Any] = {
         "stdout": log_file,
         "stderr": subprocess.STDOUT,
         "stdin": subprocess.DEVNULL,
         "close_fds": True,
+        "env": env,
     }
 
     if sys.platform == "win32":
@@ -364,6 +432,7 @@ def launch(detach: bool = False):
     config.set_option("server.port", port)
     config.set_option("server.address", "127.0.0.1")
     config.set_option("server.headless", True)
+    config.set_option("server.fileWatcherType", "none")
     config.set_option("browser.serverPort", port)
     config.set_option("browser.serverAddress", "localhost")
     config.set_option("browser.gatherUsageStats", False)
@@ -373,6 +442,7 @@ def launch(detach: bool = False):
         "server_port": port,
         "server_headless": True,
         "server_address": "127.0.0.1",
+        "server_fileWatcherType": "none",
         "browser_serverPort": port,
         "browser_serverAddress": "localhost",
         "browser_gatherUsageStats": False,

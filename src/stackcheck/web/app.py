@@ -31,11 +31,16 @@ from stackcheck.web.charts import (
 
 
 def get_assets_dir() -> Path:
-    """Resolve the assets directory reliably across local dev, installed packages, and PyInstaller frozen bundles."""
+    """Resolve the assets directory reliably across local dev, installed packages, user workspace, and PyInstaller bundles."""
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         meipass_assets = Path(sys._MEIPASS) / "assets"
         if meipass_assets.exists():
             return meipass_assets
+
+    from stackcheck.launcher import STACKCHECK_DIR
+    user_assets = STACKCHECK_DIR / "assets"
+    if user_assets.exists() and (user_assets / "logo.png").exists():
+        return user_assets
 
     repo_assets = Path(__file__).resolve().parent.parent.parent.parent / "assets"
     if repo_assets.exists():
