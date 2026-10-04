@@ -17,7 +17,17 @@ except (OSError, PermissionError):
     except Exception:
         pass
 
-LOCAL_DB_PATH = Path(os.getenv("STACKCHECK_DB_PATH", WORKSPACE_DIR / "stackcheck.db"))
+def _resolve_db_path() -> Path:
+    env_path = os.getenv("STACKCHECK_DB_PATH")
+    if env_path:
+        return Path(env_path)
+    cwd_db = WORKSPACE_DIR / "stackcheck.db"
+    if cwd_db.exists():
+        return cwd_db
+    return DEFAULT_DATA_DIR / "stackcheck.db"
+
+
+LOCAL_DB_PATH = _resolve_db_path()
 EXPORTS_DIR = Path(os.getenv("STACKCHECK_EXPORTS_DIR", WORKSPACE_DIR / "exports"))
 try:
     EXPORTS_DIR.mkdir(parents=True, exist_ok=True)

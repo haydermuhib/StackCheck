@@ -61,9 +61,9 @@ class HiringCafeClient:
     def __init__(self, use_llm_if_available: bool = False):
         self.rule_extractor = RuleExtractor()
         self.llm_extractor = LLMExtractor() if use_llm_if_available else None
+        self.last_error: Optional[str] = None
         self.session = requests.Session(impersonate="chrome120")
         self.session.headers.update({
-            "User-Agent": DEFAULT_USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
             "Referer": "https://hiringcafe.com/",
@@ -74,8 +74,10 @@ class HiringCafeClient:
         Execute live job search against HiringCafe and parse results.
         Returns ONLY genuine, real job postings. If network fails, returns empty list with explicit error message.
         """
+        self.last_error = None
         raw_items, error_msg = self._fetch_live_jobs(query, progress_callback)
         if error_msg:
+            self.last_error = error_msg
             if progress_callback:
                 progress_callback(0, 1, error_msg)
             logger.error(f"HiringCafe Search Error: {error_msg}")

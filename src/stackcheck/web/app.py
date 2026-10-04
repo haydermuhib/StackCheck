@@ -4,6 +4,7 @@ Unified Tech Stack Intelligence Engine & Data Analytics Interface.
 """
 
 import os
+import sys
 import signal
 import time
 import json
@@ -29,8 +30,32 @@ from stackcheck.web.charts import (
 )
 
 
+def get_assets_dir() -> Path:
+    """Resolve the assets directory reliably across local dev, installed packages, and PyInstaller frozen bundles."""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        meipass_assets = Path(sys._MEIPASS) / "assets"
+        if meipass_assets.exists():
+            return meipass_assets
+
+    repo_assets = Path(__file__).resolve().parent.parent.parent.parent / "assets"
+    if repo_assets.exists():
+        return repo_assets
+
+    pkg_assets = Path(__file__).resolve().parent.parent / "assets"
+    if pkg_assets.exists():
+        return pkg_assets
+
+    cwd_assets = Path.cwd() / "assets"
+    if cwd_assets.exists():
+        return cwd_assets
+
+    return repo_assets
+
+
 def init_session():
     """Initialize repository, projects, and cached job state."""
+    if "flash_msg" not in st.session_state:
+        st.session_state.flash_msg = None
     if "repo" not in st.session_state:
         st.session_state.repo = JobRepository()
     if "client" not in st.session_state:
@@ -62,7 +87,7 @@ def init_session():
 
 
 def main():
-    assets_dir = Path(__file__).resolve().parent.parent.parent.parent / "assets"
+    assets_dir = get_assets_dir()
     icon_path = assets_dir / "icon.png"
     logo_path = assets_dir / "logo.png"
 
@@ -109,8 +134,20 @@ def main():
     # ----------------- SIDEBAR CONTROLS -----------------
     with st.sidebar:
         if logo_path.exists():
-            st.image(str(logo_path), use_container_width=True)
-            st.markdown("<div style='margin-bottom: 1rem;'></div>", unsafe_allow_html=True)
+            st.image(str(logo_path), width="stretch")
+            st.markdown("<div style='margin-bottom: 0.8rem;'></div>", unsafe_allow_html=True)
+
+        if st.session_state.get("flash_msg"):
+            f_type, f_txt = st.session_state.pop("flash_msg")
+            if f_type == "success":
+                st.success(f_txt)
+            elif f_type == "error":
+                st.error(f_txt)
+            elif f_type == "warning":
+                st.warning(f_txt)
+            elif f_type == "info":
+                st.info(f_txt)
+
         # 1. Project Selector & Management
         st.header("📁 Research Workspace")
         projects = st.session_state.repo.get_projects()
@@ -138,24 +175,25 @@ def main():
         with st.expander("➕ Create or Manage Projects"):
             new_pname = st.text_input("New Project Name:", placeholder="e.g. Data Analyst Global 2026")
             new_pdesc = st.text_input("Description (optional):", placeholder="e.g. Worldwide analyst tech stack study")
-            if st.button("✨ Create Project", use_container_width=True):
+            if st.button("✨ Create Project", width="stretch"):
                 if new_pname.strip():
                     new_p = st.session_state.repo.create_project(new_pname.strip(), new_pdesc.strip())
                     st.session_state.active_project_id = new_p.id
                     st.session_state.jobs = []
                     st.session_state.stats = MetricsEngine.aggregate([], query_keywords=new_p.name)
-                    st.success(f"Project '{new_p.name}' created!")
+                    st.session_state.flash_msg = ("success", f"Project '{new_p.name}' created!")
                     st.rerun()
                 else:
                     st.error("Please enter a project name.")
 
             st.markdown("---")
             if active_project.id != "default":
-                if st.button(f"🗑 Delete '{active_project.name}'", type="secondary", use_container_width=True):
+                if st.button(f"🗑 Delete '{active_project.name}'", type="secondary", width="stretch"):
                     st.session_state.repo.delete_project(active_project.id)
                     st.session_state.active_project_id = "default"
                     st.session_state.jobs = st.session_state.repo.get_all_jobs(project_id="default")
                     st.session_state.stats = MetricsEngine.aggregate(st.session_state.jobs, query_keywords="Default Workspace")
+                    st.session_state.flash_msg = ("info", f"Project '{active_project.name}' deleted.")
                     st.rerun()
             else:
                 st.caption("ℹ️ The Default Workspace cannot be deleted.")
@@ -212,7 +250,7 @@ def main():
         limit = st.slider("Job Postings Limit (Pagination Depth):", min_value=10, max_value=500, value=50, step=10)
 
         # Trigger Pipeline
-        run_btn = st.button("🚀 Scrape & Add to Project", type="primary", use_container_width=True)
+        run_btn = st.button("🚀 Scrape & Add to Project", type="primary", width="stretch")
 
         if run_btn:
             with st.spinner(f"Ingesting live postings from HiringCafe into '{active_project.name}'..."):
@@ -235,10 +273,10 @@ def main():
                 )
 
                 new_jobs = st.session_state.client.search_jobs(query, progress_callback=progress_cb)
-                prog_bar.progress(100)
-                status_text.text("Pipeline Complete!")
 
                 if new_jobs:
+                    prog_bar.progress(100)
+                    status_text.text("Pipeline Complete!")
                     run_id = st.session_state.repo.save_search_run(query, len(new_jobs), project_id=st.session_state.active_project_id)
                     save_res = st.session_state.repo.save_jobs(new_jobs, search_run_id=run_id, project_id=st.session_state.active_project_id)
                     st.session_state.jobs = st.session_state.repo.get_all_jobs(project_id=st.session_state.active_project_id)
@@ -247,20 +285,28 @@ def main():
                     new_cnt = save_res.get("new_count", len(new_jobs)) if isinstance(save_res, dict) else len(new_jobs)
                     upd_cnt = save_res.get("updated_count", 0) if isinstance(save_res, dict) else 0
                     if upd_cnt > 0:
-                        st.success(f"✔ Processed {len(new_jobs)} postings into '{active_project.name}': **{new_cnt} newly added**, **{upd_cnt} duplicate/existing postings refreshed**! Total unique jobs in project: **{len(st.session_state.jobs)}**")
+                        st.session_state.flash_msg = ("success", f"✔ Ingested {len(new_jobs)} postings into '{active_project.name}': **{new_cnt} newly added**, **{upd_cnt} duplicate/existing postings refreshed**! Total unique jobs in project: **{len(st.session_state.jobs)}**")
                     else:
-                        st.success(f"✔ Successfully added **{new_cnt} new postings** into '{active_project.name}'! Total unique jobs in project: **{len(st.session_state.jobs)}**")
+                        st.session_state.flash_msg = ("success", f"✔ Successfully added **{new_cnt} new postings** into '{active_project.name}'! Total unique jobs in project: **{len(st.session_state.jobs)}**")
                     st.rerun()
                 else:
-                    st.warning("No postings found for this exact query. Try broadening the keywords or location.")
+                    prog_bar.empty()
+                    err = getattr(st.session_state.client, "last_error", None)
+                    if err:
+                        status_text.empty()
+                        st.error(f"❌ Scraping Error: {err}")
+                    else:
+                        status_text.text("No results returned.")
+                        st.warning("⚠️ No postings found for this exact query. Try broadening the keywords or location.")
 
         st.markdown("---")
         st.markdown(f"**Project Summary (`{active_project.name}`):**")
         st.write(f"📁 Stored Postings in Project: **{len(st.session_state.jobs)}**")
-        if st.button("🗑 Clear Jobs in this Project", use_container_width=True):
+        if st.button("🗑 Clear Jobs in this Project", width="stretch"):
             st.session_state.repo.clear_project_jobs(st.session_state.active_project_id)
             st.session_state.jobs = []
             st.session_state.stats = MetricsEngine.aggregate([], query_keywords="Cleared")
+            st.session_state.flash_msg = ("info", f"Cleared all jobs in '{active_project.name}'.")
             st.rerun()
 
         # ----------------- SYSTEM & SERVER MANAGEMENT -----------------
@@ -273,7 +319,7 @@ def main():
                 st.caption("🟢 **Status:** Active (In-Process)")
 
             # Clean Server Stop / Shutdown Button
-            if st.button("🛑 Stop Server & Release Port", type="secondary", use_container_width=True):
+            if st.button("🛑 Stop Server & Release Port", type="secondary", width="stretch"):
                 st.warning("Shutting down StackCheck server...")
                 time.sleep(0.4)
                 stop_running_instance()
@@ -289,7 +335,7 @@ def main():
             if "update_info" not in st.session_state:
                 st.session_state.update_info = None
 
-            if st.button("🔄 Check for Updates", use_container_width=True):
+            if st.button("🔄 Check for Updates", width="stretch"):
                 with st.spinner("Checking GitHub for newer releases..."):
                     res = UpdateChecker.check_for_update()
                     st.session_state.update_info = res
@@ -305,7 +351,7 @@ def main():
             if up_info and up_info.get("has_update"):
                 target_asset = up_info.get("target_asset")
                 if target_asset and target_asset.get("download_url"):
-                    if st.button(f"⬇️ Download & Update to v{up_info['latest_version']}", type="primary", use_container_width=True):
+                    if st.button(f"⬇️ Download & Update to v{up_info['latest_version']}", type="primary", width="stretch"):
                         prog_bar = st.progress(0)
                         status_lbl = st.empty()
                         status_lbl.text(f"Downloading {target_asset['name']}...")
@@ -380,13 +426,13 @@ def main():
                 weight_toggle = st.checkbox("Apply Section-Weighted Priority Multipliers (1.8x Requirements vs 1.0x Context)", value=False)
                 fig_top = plot_top_skills(stats, top_n=14, use_weighted=weight_toggle)
                 if fig_top:
-                    st.pyplot(fig_top, use_container_width=True)
+                    st.pyplot(fig_top, width="stretch")
 
             with col_side:
                 st.subheader("📦 Domain Category Breakdown")
                 fig_cat = plot_category_breakdown(stats)
                 if fig_cat:
-                    st.pyplot(fig_cat, use_container_width=True)
+                    st.pyplot(fig_cat, width="stretch")
                 else:
                     st.write("No category data available.")
 
@@ -400,7 +446,7 @@ def main():
             
             heatmap_fig = plot_co_occurrence_heatmap(stats, top_n=10)
             if heatmap_fig:
-                st.pyplot(heatmap_fig, use_container_width=True)
+                st.pyplot(heatmap_fig, width="stretch")
 
             st.markdown("---")
             col_sal, col_dist = st.columns([1.2, 1])
@@ -409,7 +455,7 @@ def main():
                 st.subheader("💵 Salary Benchmarks by Technology")
                 sal_fig = plot_salary_by_tech(stats)
                 if sal_fig:
-                    st.pyplot(sal_fig, use_container_width=True)
+                    st.pyplot(sal_fig, width="stretch")
                 else:
                     st.info("Insufficient structured salary samples in current query to render compensation error bars.")
 
@@ -417,9 +463,9 @@ def main():
                 st.subheader("🌍 Workplace & Experience Distribution")
                 fig_wp, fig_exp = plot_distributions(stats)
                 if fig_wp:
-                    st.pyplot(fig_wp, use_container_width=True)
+                    st.pyplot(fig_wp, width="stretch")
                 if fig_exp:
-                    st.pyplot(fig_exp, use_container_width=True)
+                    st.pyplot(fig_exp, width="stretch")
 
             # Geographic table
             if stats.geo_breakdown:
@@ -433,7 +479,7 @@ def main():
                         "Postings Count": g_info.total_jobs,
                         "Top Demanded Technologies": top_skills_str
                     })
-                st.dataframe(pd.DataFrame(geo_rows), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(geo_rows), width="stretch", hide_index=True)
 
     # ----------------- TAB 3: JOBS EXPLORER -----------------
     with tab_jobs:
