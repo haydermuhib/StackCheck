@@ -199,7 +199,7 @@ def main():
                         wp_enum = WorkplaceType(active_project.last_workplace) if active_project.last_workplace and active_project.last_workplace != "any" else None
                         exp_enum = ExperienceLevel(active_project.last_experience) if active_project.last_experience and active_project.last_experience != "any" else None
                         q = SearchQuery(
-                            keywords=active_project.last_keywords,
+                            keywords=active_project.last_keywords or "Data Analyst",
                             location=active_project.last_location or "",
                             workplace_type=wp_enum,
                             experience_level=exp_enum,
@@ -211,7 +211,7 @@ def main():
                             run_id = st.session_state.repo.save_search_run(q, total_found=len(fresh_jobs), project_id=active_project.id)
                             res = st.session_state.repo.save_jobs(fresh_jobs, search_run_id=run_id, project_id=active_project.id)
                             st.session_state.jobs = st.session_state.repo.get_all_jobs(project_id=active_project.id)
-                            st.session_state.stats = MetricsEngine.aggregate(st.session_state.jobs, query_keywords=active_project.last_keywords)
+                            st.session_state.stats = MetricsEngine.aggregate(st.session_state.jobs, query_keywords=active_project.last_keywords or active_project.name or "General")
                             st.session_state.flash_msg = ("success", f"✔ Scraped {len(fresh_jobs)} postings: {res['new_count']} new added ({res['updated_count']} duplicates updated).")
                             st.rerun()
                         else:

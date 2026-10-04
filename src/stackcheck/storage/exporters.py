@@ -71,6 +71,8 @@ class ReportExporter:
             "## 📌 Executive Summary",
             f"- **Total Clean Postings Analyzed:** {stats.total_jobs}",
             f"- **Unique Companies:** {stats.unique_companies}",
+            f"- **Salary Transparency Rate:** {stats.salary_transparency_pct}% of postings disclose salary",
+            f"- **Avg Tech Stack Breadth:** {stats.stack_density_stats.get('avg_skills_per_job', 0.0)} skills / posting",
             f"- **Workplace Split:** Remote: {stats.workplace_distribution.get('remote', 0)} | Hybrid: {stats.workplace_distribution.get('hybrid', 0)} | Onsite: {stats.workplace_distribution.get('onsite', 0)}",
             "",
             "---",
@@ -94,6 +96,39 @@ class ReportExporter:
 
         for pair in stats.co_occurrences[:10]:
             md_lines.append(f"| **{pair.skill_a}** | **{pair.skill_b}** | {pair.count} | {pair.percentage}% |")
+
+        # Seniority compensation table
+        if stats.experience_salary_stats:
+            md_lines.extend([
+                "",
+                "---",
+                "",
+                "## 💵 Compensation Benchmarks by Seniority Tier",
+                "| Experience Tier | Median Annual Salary | Salary Range | Sample Size |",
+                "|---|---|---|---|"
+            ])
+            order = ["entry", "mid", "senior", "lead", "executive"]
+            sorted_tiers = sorted(
+                stats.experience_salary_stats.keys(),
+                key=lambda x: order.index(x.lower()) if x.lower() in order else 99
+            )
+            for tier in sorted_tiers:
+                t_data = stats.experience_salary_stats[tier]
+                md_lines.append(f"| **{tier.capitalize()}** | ${t_data['median']:,.0f} | ${t_data['min']:,.0f} - ${t_data['max']:,.0f} | {int(t_data['count'])} |")
+
+        # Top hiring companies table
+        if stats.top_hiring_companies:
+            md_lines.extend([
+                "",
+                "---",
+                "",
+                "## 🏢 Top Actively Hiring Employers",
+                "| Company | Open Positions | Market Share (%) | Key Tech Stack |",
+                "|---|---|---|---|"
+            ])
+            for comp in stats.top_hiring_companies[:10]:
+                tech_tags = ", ".join(comp.get("top_skills", [])[:4])
+                md_lines.append(f"| **{comp['company']}** | {comp['job_count']} | {comp['percentage']}% | {tech_tags or 'N/A'} |")
 
         md_lines.extend([
             "",

@@ -296,7 +296,10 @@ def plot_salary_by_country_scatter(country_salary_data: List[dict], color_by: st
     country_medians = df.groupby("country")["salary_k"].median().sort_values(ascending=False)
     order = country_medians.index.tolist()
 
-    fig, ax = plt.subplots(figsize=(10.5, 5.5), dpi=150)
+    num_countries = len(order)
+    fig_width = max(9.5, min(14.0, num_countries * 0.95 + 2.5))
+    rot_angle = 35 if num_countries > 6 else 20
+    fig, ax = plt.subplots(figsize=(fig_width, 5.5), dpi=150)
 
     # Determine hue column and palette
     hue_col = "experience" if color_by == "experience" and "experience" in df.columns else "workplace"
@@ -346,7 +349,7 @@ def plot_salary_by_country_scatter(country_salary_data: List[dict], color_by: st
     ax.set_ylabel("Annual Salary ($k USD)", fontsize=10, fontweight="semibold", color="#475569")
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"${int(x)}k"))
 
-    plt.setp(ax.get_xticklabels(), rotation=25, ha="right", fontsize=9, fontweight="medium")
+    plt.setp(ax.get_xticklabels(), rotation=rot_angle, ha="right", fontsize=9, fontweight="medium")
 
     # Legend formatting
     handles, labels = ax.get_legend_handles_labels()

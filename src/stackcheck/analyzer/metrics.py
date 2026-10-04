@@ -7,6 +7,7 @@ Analytics and Metrics Aggregator:
 - Salary correlation
 """
 
+import statistics
 from typing import List, Dict, Any, Tuple
 from collections import Counter, defaultdict
 from itertools import combinations
@@ -176,8 +177,6 @@ class MetricsEngine:
                 }
 
         # 7. Job Market Metrics: Transparency & Country Scatter Records
-        import statistics
-
         country_salary_data = []
         salaries_all = []
         salaries_by_exp: Dict[str, List[float]] = defaultdict(list)
