@@ -21,7 +21,7 @@ dependencies = [
     "curl_cffi>=0.16.0",
     "click>=8.1.7",
     "pydantic>=2.6.0",
-    "graphifyy>=0.9.75",
+    "httpx>=0.28.1",
 ]
 
 [project.scripts]
@@ -29,3 +29,10 @@ stackcheck = "stackcheck.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[dependency-groups]
+dev = [
+    "graphifyy>=0.9.75",
+    "pyinstaller>=6.22.3",
+    "pytest>=9.1.1",
+]
