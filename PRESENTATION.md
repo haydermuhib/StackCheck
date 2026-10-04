@@ -105,6 +105,7 @@ StackCheck builds on the data analysis framework applied to 22,000 real job post
 - `stackcheck.analyzer.rule_extractor`: Segments job descriptions into sections and applies decaying positional weights.
 - `stackcheck.analyzer.currency`: Caches daily exchange rates with 24-hour TTL, supports offline fallback rates, and normalizes foreign currencies to USD.
 - `stackcheck.storage.repository`: SQLite persistence with project-scoped isolation and multi-keyword search logging.
+- `stackcheck.launcher`: Desktop bootloader with single-instance management, persistent static asset caching, and automated browser launch.
 - `stackcheck.web.app`: Streamlit web dashboard with Matplotlib charts, Seaborn heatmaps, and direct apply links.
 
 </details>
@@ -209,6 +210,7 @@ StackCheck runs a local web application built with Streamlit, Matplotlib, and Se
 | `stackcheck` | Launch interactive Streamlit web dashboard |
 | `stackcheck -d` | Launch web dashboard as a background daemon |
 | `stackcheck status` | Check server health, active port, and uptime |
+| `stackcheck check` | Verify runtime environment & compiled C-extensions |
 | `stackcheck stop` | Terminate running dashboard processes |
 | `stackcheck search -k "Data Engineer" -l Remote` | Scrape and analyze matching jobs from CLI |
 | `stackcheck export --format all` | Export dataset to JSON, CSV, and Markdown |

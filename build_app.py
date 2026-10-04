@@ -58,7 +58,6 @@ def build(onefile: bool = True):
         "--onefile" if onefile else "--onedir",
         f"--add-data={SRC_DIR / 'stackcheck'}{sep}stackcheck",
         f"--add-data={static_dir}{sep}streamlit/static",
-        f"--add-data={static_dir}{sep}streamlit",
         f"--add-data={ASSETS_DIR}{sep}assets",
         "--collect-all=streamlit",
         "--collect-all=altair",
@@ -83,13 +82,39 @@ def build(onefile: bool = True):
         "--hidden-import=stackcheck.web.app",
         "--hidden-import=stackcheck.web.charts",
         "--hidden-import=streamlit.runtime.scriptrunner.magic_funcs",
+        # 1. Exclude test suites
+        "--exclude-module=pandas.tests",
+        "--exclude-module=numpy.tests",
+        "--exclude-module=numpy.testing",
         "--exclude-module=matplotlib.tests",
-        "--exclude-module=pandas.core._numba",
+        "--exclude-module=matplotlib.testing",
+        "--exclude-module=seaborn.tests",
+        # 2. Exclude unused PyArrow heavy submodules
+        "--exclude-module=pyarrow.flight",
+        "--exclude-module=pyarrow.substrait",
+        "--exclude-module=pyarrow.cuda",
+        "--exclude-module=pyarrow.orc",
+        "--exclude-module=pyarrow.tests",
+        # 3. Exclude unused GUI toolkits
         "--exclude-module=tkinter",
         "--exclude-module=PyQt5",
         "--exclude-module=PyQt6",
         "--exclude-module=PySide2",
         "--exclude-module=PySide6",
+        # 4. Exclude dev tools, REPLs, and unneeded compilers
+        "--exclude-module=pandas.core._numba",
+        "--exclude-module=IPython",
+        "--exclude-module=jedi",
+        "--exclude-module=parso",
+        "--exclude-module=pytest",
+        "--exclude-module=unittest.mock",
+        "--exclude-module=docutils",
+        "--exclude-module=sphinx",
+        "--exclude-module=setuptools",
+        "--exclude-module=wheel",
+        "--exclude-module=pip",
+        "--exclude-module=scipy",
+        "--noupx",
         str(SRC_DIR / "stackcheck" / "cli.py")
     ]
 

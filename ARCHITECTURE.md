@@ -187,9 +187,11 @@ flowchart TD
   - **Readiness Health Check**: Polls TCP connection availability (`is_port_listening`) before launching the system browser, preventing initial "connection refused" white-screens.
   - **Detached Daemon Mode (`-d`)**: Spawns detached background processes with sanitized child environments (stripping PyInstaller `_MEIPASS2` to preserve independent lifecycle).
   - **Deterministic Web App Sync**: Automatically extracts and synchronizes `app.py`, `charts.py`, and assets to `~/.stackcheck/web/` so Streamlit entrypoint files are immune to `/tmp` cleanup when parent CLI processes exit.
+  - **Persistent Streamlit Frontend Mirroring**: Mirrors Streamlit static assets (`index.html`, JS/CSS bundles) to `~/.stackcheck/streamlit_static/` and monkeypatches `streamlit.file_util.get_static_dir()`, insulating the Starlette static route handler from PyInstaller temporary `_MEI...` cleanup and preventing `500 Internal Server Error` in detached or cold-boot instances.
+  - **Cross-Platform UTF-8 Console Safety**: Auto-reconfigures standard output and error streams on Windows consoles to protect against legacy codepage `UnicodeEncodeError` when rendering Rich checkmarks, panels, and emojis.
 - **`cli.py`**:
   - Production-grade Click CLI styled with Rich panels, spinners, and tables.
-  - Commands: `stackcheck` (web dashboard), `stackcheck status`, `stackcheck stop`, `stackcheck update`, `stackcheck search`, `stackcheck analyze`, `stackcheck export`, `stackcheck projects`, and `stackcheck sync`.
+  - Commands: `stackcheck` (web dashboard), `stackcheck check` (deep runtime dependency & C-extension diagnostic), `stackcheck status`, `stackcheck stop`, `stackcheck update`, `stackcheck search`, `stackcheck analyze`, `stackcheck export`, `stackcheck projects`, and `stackcheck sync`.
 - **`updater.py`**:
   - In-place auto-updater connecting to GitHub Releases API.
   - Detects current platform/architecture binary, streams downloads with rich progress bars, and replaces the running binary with executable permissions.
@@ -204,6 +206,7 @@ All execution methods (`uv run stackcheck`, local standalone `./dist/StackCheck`
 - `~/.stackcheck/stackcheck.pid`: Active server process PID.
 - `~/.stackcheck/stackcheck.json`: Live port, URL, and start timestamp metadata.
 - `~/.stackcheck/stackcheck.log`: Detached background daemon logs.
+- `~/.stackcheck/streamlit_static/`: Persistent Streamlit frontend assets cache.
 - `~/.stackcheck/web/`: Synchronized Streamlit application runtime (`app.py`, `charts.py`).
 - `~/.stackcheck/assets/`: Embedded brand icons and logos.
 - `~/.stackcheck/exports/`: Exported JSON, CSV, and Markdown briefs.
@@ -336,7 +339,7 @@ uv run streamlit run app.py
 
 ### 2. Standalone Desktop Binary (PyInstaller)
 ```bash
-# Compile standalone desktop executable
+# Compile optimized standalone desktop executable (~158 MB slim bundle)
 uv run python build_app.py --onefile
 
 # Run compiled binary directly (zero Python dependencies required)
@@ -347,6 +350,9 @@ uv run python build_app.py --onefile
 
 # Check service health & uptime
 ./dist/StackCheck status
+
+# Run deep C-extension & runtime dependency verification
+./dist/StackCheck check
 
 # Terminate running server
 ./dist/StackCheck stop
