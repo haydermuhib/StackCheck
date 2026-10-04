@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StackCheck — Complete Call Flow &amp; Architecture Documentation</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f172a; --surface: #1e293b; --border: #334155;
+  --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
+  --warn: #fbbf24; --err: #f87171; --ok: #34d399;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+.container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+h1 { font-size: 2.4rem; margin-bottom: 8px; background: linear-gradient(135deg, var(--accent), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h2 { font-size: 1.7rem; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+h3 { font-size: 1.25rem; margin: 32px 0 12px; color: var(--accent); }
+h4 { font-size: 1.05rem; margin: 20px 0 8px; color: var(--warn); }
+p { margin: 8px 0; color: var(--muted); }
+.subtitle { color: var(--muted); font-size: 1.1rem; margin-bottom: 32px; }
+.mermaid { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 20px 0; overflow-x: auto; position: relative; }
+.mermaid.is-enhanced { padding: 0; overflow: hidden; min-height: 260px; }
+.mermaid-viewport { padding: 54px 24px 24px; overflow: hidden; cursor: grab; touch-action: none; min-height: 260px; }
+.mermaid-viewport.is-dragging { cursor: grabbing; }
+.mermaid-viewport svg { max-width: none !important; height: auto; transform-origin: 0 0; transition: transform 120ms ease; }
+.mermaid-toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; display: flex; align-items: center; gap: 6px; padding: 6px; background: rgba(15,23,42,0.92); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
+.mermaid-toolbar button, .mermaid-toolbar .zoom-level { height: 28px; min-width: 32px; border: 1px solid var(--border); border-radius: 6px; background: #1e293b; color: var(--text); font: 600 0.78rem system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; }
+.mermaid-toolbar button { cursor: pointer; }
+.mermaid-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+.mermaid-toolbar .zoom-level { min-width: 52px; color: var(--muted); background: transparent; }
+.call-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem; }
+.call-table th { background: #1a2744; color: var(--accent); text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+.call-table td { padding: 8px 14px; border: 1px solid var(--border); vertical-align: top; }
+.call-table tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+.tag-async { background: #7c3aed33; color: #a78bfa; }
+.tag-class { background: #05966933; color: var(--ok); }
+.tag-func { background: #2563eb33; color: var(--accent); }
+.tag-cmd { background: #d9770633; color: var(--warn); }
+.tag-endpoint { background: #dc262633; color: var(--err); }
+.tag-hook { background: #db277733; color: #f472b6; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 16px 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 16px 0; }
+.arrow-chain { font-family: 'Fira Code', monospace; font-size: 0.85rem; color: var(--accent); padding: 10px; background: rgba(56,189,248,0.06); border-radius: 6px; }
+code { font-family: 'Fira Code', 'Cascadia Code', monospace; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; font-size: 0.88em; }
+ul, ol { margin: 8px 0 8px 24px; color: var(--muted); }
+li { margin: 4px 0; }
+a { color: var(--accent); }
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+.nav { position: sticky; top: 0; background: var(--bg); z-index: 10; padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.9rem; }
+.nav a { text-decoration: none; }
+.nav a:hover { text-decoration: underline; }
+@media (max-width: 768px) { .container { padding: 16px; } h1 { font-size: 1.8rem; } }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>StackCheck — Complete Call Flow &amp; Architecture Documentation</h1>
+<p class="subtitle">Generated from graphify knowledge graph: 338 nodes, 785 edges, 13 communities. Commit: 80ae786</p>
+
+<div class="nav">
+    <a href="#overview">Architecture Overview</a>
+    <a href="#extract-pipeline">Extraction Pipeline</a>
+    <a href="#analysis-clustering">Analysis &amp; Clustering</a>
+    <a href="#cli-skills">CLI &amp; Skill Installers</a>
+    <a href="#ingest-cache-update">Ingestion &amp; Updates</a>
+    <a href="#tests-fixtures">Tests &amp; Fixtures</a>
+    <a href="#web-init-py">web/__init__.py</a>
+    <a href="#stackcheck">stackcheck</a>
+</div>
+
+<!-- ====== Architecture Overview ====== -->
+<h2 id="overview">1. Architecture Overview</h2>
+
+<div class="mermaid">
+
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    EXTRACT_PIPELINE_5F350230("Extraction Pipeline<br/><small>77 nodes</small>")
+    class EXTRACT_PIPELINE_5F350230 module;
+    ANALYSIS_CLUSTERING_C79796DA("Analysis &amp; Clustering<br/><small>10 nodes</small>")
+    class ANALYSIS_CLUSTERING_C79796DA module;
+    CLI_SKILLS_9964CBB8("CLI &amp; Skill Installers<br/><small>8 nodes</small>")
+    class CLI_SKILLS_9964CBB8 module;
+    INGEST_CACHE_UPDATE_FF457338("Ingestion &amp; Updates<br/><small>16 nodes</small>")
+    class INGEST_CACHE_UPDATE_FF457338 module;
+    TESTS_FIXTURES_B84B1DCC("Tests &amp; Fixtures<br/><small>224 nodes</small>")
+    class TESTS_FIXTURES_B84B1DCC module;
+    WEB_INIT_PY_B3080FEA("web/__init__.py<br/><small>2 nodes</small>")
+    class WEB_INIT_PY_B3080FEA module;
+    STACKCHECK_CF5832C2("stackcheck<br/><small>1 nodes</small>")
+    class STACKCHECK_CF5832C2 module;
+    EXTRACT_PIPELINE_5F350230 -->|imports x61| TESTS_FIXTURES_B84B1DCC
+    TESTS_FIXTURES_B84B1DCC -->|imports x37| EXTRACT_PIPELINE_5F350230
+    TESTS_FIXTURES_B84B1DCC -->|calls x9| INGEST_CACHE_UPDATE_FF457338
+    ANALYSIS_CLUSTERING_C79796DA -->|uses x7| TESTS_FIXTURES_B84B1DCC
+    INGEST_CACHE_UPDATE_FF457338 -->|references x2| TESTS_FIXTURES_B84B1DCC
+    TESTS_FIXTURES_B84B1DCC -->|imports x2| ANALYSIS_CLUSTERING_C79796DA
+    EXTRACT_PIPELINE_5F350230 -->|contains| ANALYSIS_CLUSTERING_C79796DA
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h4>Architecture Layers</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>Layer</th><th>Nodes</th><th>Communities</th></tr>
+      <tr><td>Extraction Pipeline</td><td>77</td><td><code>2, 3</code></td></tr><tr><td>Analysis &amp; Clustering</td><td>10</td><td><code>9</code></td></tr><tr><td>CLI &amp; Skill Installers</td><td>8</td><td><code>10</code></td></tr><tr><td>Ingestion &amp; Updates</td><td>16</td><td><code>8</code></td></tr><tr><td>Tests &amp; Fixtures</td><td>224</td><td><code>0, 1, 4, 5, 6, 7</code></td></tr><tr><td>web/__init__.py</td><td>2</td><td><code>11</code></td></tr><tr><td>stackcheck</td><td>1</td><td><code>12</code></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Core Flow</h4>
+    <div class="arrow-chain">CLI &amp; Skill Installers -&gt; Extraction Pipeline -&gt; Tests &amp; Fixtures -&gt; Ingestion &amp; Updates -&gt; Analysis &amp; Clustering -&gt; web/__init__.py -&gt; stackcheck</div>
+  </div>
+</div>
+<div class="grid">
+  <div class="card">
+    <h4>Graph Report Highlights</h4>
+    <ul>
+      <li>338 nodes · 785 edges · 13 communities (9 shown, 4 thin omitted)</li>
+      <li>Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 123 edges (avg confidence: 0.94)</li>
+      <li>Token cost: 0 input · 0 output</li>
+      <li>1. `JobRepository` - 39 edges</li>
+      <li>2. `JobPost` - 26 edges</li>
+      <li>3. `main()` - 26 edges</li>
+    </ul>
+  </div>
+</div>
+<hr>
+<!-- ====== 2. Extraction Pipeline ====== -->
+<h2 id="extract-pipeline">2. Extraction Pipeline</h2>
+<p>Extraction Pipeline groups implementation around stackcheck, analyzer, extractorpy, rule, mostly in stackcheck/analyzer/rule_extractor.py, stackcheck/analyzer/llm_extractor.py, stackcheck/client/hiringcafe.py. This section covers 77 nodes and 138 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Extraction Pipeline (77 nodes, 138 edges)
+    subgraph extract_pipeline_stackcheck_analyzer_llm_extract_50edd1e1["stackcheck/analyzer/llm_extractor.py"]
+        src_stackcheck_analyzer_llm_extractor_4eebd431("llm_extractor.py")
+        src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc("LLMExtractor<br/><small>stackcheck/analyzer/llm_extractor.py</small>")
+        src_stackcheck_analyzer_llm_extractor_llmextract_a5944722("_parse_json_response()<br/><small>stackcheck/analyzer/llm_extractor.py</small>")
+        src_stackcheck_analyzer_llm_extractor_llmextract_2076958a("__init__()<br/><small>stackcheck/analyzer/llm_extractor.py</small>")
+        src_stackcheck_analyzer_llm_extractor_llmextract_faecb838("extract()<br/><small>stackcheck/analyzer/llm_extractor.py</small>")
+        src_stackcheck_analyzer_llm_extractor_llmextract_b765056f("_call_gemini()<br/><small>stackcheck/analyzer/llm_extractor.py</small>")
+        src_stackcheck_analyzer_llm_extractor_llmextract_6b0378d4("_call_openai()<br/><small>stackcheck/analyzer/llm_extractor.py</small>")
+    end
+    subgraph extract_pipeline_stackcheck_analyzer_rule_extrac_00cc47df["stackcheck/analyzer/rule_extractor.py"]
+        src_stackcheck_analyzer_rule_extractor_ruleextra_680c7512("RuleExtractor<br/><small>stackcheck/analyzer/rule_extractor.py</small>")
+        src_stackcheck_analyzer_rule_extractor_ruleextra_80ad4742("__init__()<br/><small>stackcheck/analyzer/rule_extractor.py</small>")
+        src_stackcheck_analyzer_rule_extractor_ruleextra_50787aa5("extract_from_text()<br/><small>stackcheck/analyzer/rule_extractor.py</small>")
+        src_stackcheck_analyzer_rule_extractor_ruleextra_491c8156("process_job_description()<br/><small>stackcheck/analyzer/rule_extractor.py</small>")
+    end
+    subgraph extract_pipeline_stackcheck_client_hiringcafe_py_0782f767["stackcheck/client/hiringcafe.py"]
+        src_stackcheck_client_hiringcafe_52949d15("hiringcafe.py")
+        src_stackcheck_client_hiringcafe_hiringcafeclien_94e9661a("HiringCafeClient<br/><small>stackcheck/client/hiringcafe.py</small>")
+        src_stackcheck_client_hiringcafe_hiringcafeclien_6384229c("__init__()<br/><small>stackcheck/client/hiringcafe.py</small>")
+    end
+    src_stackcheck_client_normalizer_7806dafd("normalizer.py")
+    src_stackcheck_storage_exporters_8b36d1bf("exporters.py")
+    src_stackcheck_storage_repository_28ce17ba("repository.py")
+    src_stackcheck_storage_sync_d239bf1c("sync.py")
+    src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc -->|method| src_stackcheck_analyzer_llm_extractor_llmextract_a5944722
+    src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc -->|method| src_stackcheck_analyzer_llm_extractor_llmextract_2076958a
+    src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc -->|method| src_stackcheck_analyzer_llm_extractor_llmextract_faecb838
+    src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc -->|method| src_stackcheck_analyzer_llm_extractor_llmextract_b765056f
+    src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc -->|method| src_stackcheck_analyzer_llm_extractor_llmextract_6b0378d4
+    src_stackcheck_analyzer_rule_extractor_ruleextra_680c7512 -->|method| src_stackcheck_analyzer_rule_extractor_ruleextra_80ad4742
+    src_stackcheck_analyzer_rule_extractor_ruleextra_680c7512 -->|method| src_stackcheck_analyzer_rule_extractor_ruleextra_50787aa5
+    src_stackcheck_analyzer_rule_extractor_ruleextra_680c7512 -->|method| src_stackcheck_analyzer_rule_extractor_ruleextra_491c8156
+    src_stackcheck_client_hiringcafe_hiringcafeclien_94e9661a -->|method| src_stackcheck_client_hiringcafe_hiringcafeclien_6384229c
+    src_stackcheck_analyzer_llm_extractor_llmextract_b765056f -->|calls| src_stackcheck_analyzer_llm_extractor_llmextract_a5944722
+    src_stackcheck_analyzer_llm_extractor_llmextract_6b0378d4 -->|calls| src_stackcheck_analyzer_llm_extractor_llmextract_a5944722
+    src_stackcheck_analyzer_llm_extractor_llmextract_faecb838 -->|calls| src_stackcheck_analyzer_llm_extractor_llmextract_b765056f
+    src_stackcheck_analyzer_llm_extractor_llmextract_faecb838 -->|calls| src_stackcheck_analyzer_llm_extractor_llmextract_6b0378d4
+    src_stackcheck_analyzer_rule_extractor_ruleextra_491c8156 -->|calls| src_stackcheck_analyzer_rule_extractor_ruleextra_50787aa5
+    src_stackcheck_client_hiringcafe_hiringcafeclien_6384229c -->|calls| src_stackcheck_analyzer_rule_extractor_ruleextra_680c7512
+    src_stackcheck_client_hiringcafe_hiringcafeclien_6384229c -->|calls| src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc
+    src_stackcheck_client_hiringcafe_52949d15 -->|imports| src_stackcheck_analyzer_rule_extractor_ruleextra_680c7512
+    src_stackcheck_client_hiringcafe_52949d15 -->|imports| src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc
+    src_stackcheck_client_hiringcafe_52949d15 -->|imports| src_stackcheck_client_normalizer_7806dafd
+    src_stackcheck_client_hiringcafe_52949d15 -->|imports| src_stackcheck_analyzer_llm_extractor_4eebd431
+    src_stackcheck_storage_sync_d239bf1c -->|imports| src_stackcheck_storage_repository_28ce17ba
+    src_stackcheck_client_hiringcafe_hiringcafeclien_94e9661a -->|uses| src_stackcheck_analyzer_rule_extractor_ruleextra_680c7512
+    src_stackcheck_client_hiringcafe_hiringcafeclien_94e9661a -->|uses| src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc
+    %% Omitted for readability: 59 nodes, 0 edges
+    class src_stackcheck_analyzer_llm_extractor_4eebd431 module;
+    class src_stackcheck_analyzer_llm_extractor_llmextract_39b0fddc klass;
+    class src_stackcheck_analyzer_llm_extractor_llmextract_a5944722 function;
+    class src_stackcheck_analyzer_llm_extractor_llmextract_2076958a function;
+    class src_stackcheck_analyzer_llm_extractor_llmextract_faecb838 function;
+    class src_stackcheck_analyzer_llm_extractor_llmextract_b765056f function;
+    class src_stackcheck_analyzer_llm_extractor_llmextract_6b0378d4 function;
+    class src_stackcheck_analyzer_rule_extractor_ruleextra_680c7512 klass;
+    class src_stackcheck_analyzer_rule_extractor_ruleextra_80ad4742 function;
+    class src_stackcheck_analyzer_rule_extractor_ruleextra_50787aa5 function;
+    class src_stackcheck_analyzer_rule_extractor_ruleextra_491c8156 function;
+    class src_stackcheck_client_hiringcafe_52949d15 module;
+    class src_stackcheck_client_hiringcafe_hiringcafeclien_94e9661a entry;
+    class src_stackcheck_client_hiringcafe_hiringcafeclien_6384229c function;
+    class src_stackcheck_client_normalizer_7806dafd module;
+    class src_stackcheck_storage_exporters_8b36d1bf module;
+    class src_stackcheck_storage_repository_28ce17ba module;
+    class src_stackcheck_storage_sync_d239bf1c module;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>LLMExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small><br><code>hiringcafe.py</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small><br><code>HiringCafeClient</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small><br><code>_call_gemini()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small><br><code>_call_openai()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small><br>+4 more</td>
+  <td>LLMExtractor node in stackcheck/analyzer/llm_extractor.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>RuleExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small><br><code>extractor positional weighting()</code><br><small style="color:var(--muted)">tests/test_analyzer.py</small><br><code>hiringcafe job parsing()</code><br><small style="color:var(--muted)">tests/test_client.py</small><br>+2 more</td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small><br><code>extract_from_text()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small><br><code>ExtractedSkill</code><br><small style="color:var(--muted)">src/stackcheck/models.py</small><br>+2 more</td>
+  <td>RuleExtractor node in stackcheck/analyzer/rule_extractor.py.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>HiringCafeClient</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>app.py</code><br><small style="color:var(--muted)">stackcheck/web/app.py</small><br><code>cli.py</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>hiringcafe client structure()</code><br><small style="color:var(--muted)">tests/test_client.py</small><br>+3 more</td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small><br><code>_fetch_live_jobs()</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small><br><code>ExperienceLevel</code><br><small style="color:var(--muted)">src/stackcheck/models.py</small><br>+8 more</td>
+  <td>HiringCafeClient node in stackcheck/client/hiringcafe.py.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>ExtractedSkill</code><br><small style="color:var(--muted)">src/stackcheck/models.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>create_sample_jobs()</code><br><small style="color:var(--muted)">tests/test_web.py</small><br><code>get_all_jobs()</code><br><small style="color:var(--muted)">stackcheck/storage/repository.py</small><br><code>JobRepository</code><br><small style="color:var(--muted)">stackcheck/storage/repository.py</small><br>+8 more</td>
+  <td>No direct outbound edge</td>
+  <td>ExtractedSkill node in src/stackcheck/models.py.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>._call_gemini()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>extract()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small><br><code>LLMExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><code>_parse_json_response()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td>._call_gemini() node in stackcheck/analyzer/llm_extractor.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>._call_openai()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>extract()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small><br><code>LLMExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><code>_parse_json_response()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td>._call_openai() node in stackcheck/analyzer/llm_extractor.py.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>.extract()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>LLMExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><code>_call_gemini()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small><br><code>_call_openai()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td>.extract() node in stackcheck/analyzer/llm_extractor.py.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>LLMExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.__init__() node in stackcheck/analyzer/llm_extractor.py.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>._parse_json_response()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>_call_gemini()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small><br><code>_call_openai()</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small><br><code>LLMExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>._parse_json_response() node in stackcheck/analyzer/llm_extractor.py.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>compile_pattern()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>compile_pattern() node in stackcheck/analyzer/rule_extractor.py.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>extract_bullet_points()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>segment_job_description()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>extract_bullet_points() node in stackcheck/analyzer/rule_extractor.py.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>.extract_from_text()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>process_job_description()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small><br><code>RuleExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.extract_from_text() node in stackcheck/analyzer/rule_extractor.py.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>RuleExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><code>compile_pattern()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>.__init__() node in stackcheck/analyzer/rule_extractor.py.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>.process_job_description()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>RuleExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><code>extract_from_text()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small><br><code>segment_job_description()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>.process_job_description() node in stackcheck/analyzer/rule_extractor.py.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>segment_job_description()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>process_job_description()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small><br><code>segment job description()</code><br><small style="color:var(--muted)">tests/test_analyzer.py</small></td>
+  <td><code>extract_bullet_points()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>segment_job_description() node in stackcheck/analyzer/rule_extractor.py.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>HiringCafeClient</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small></td>
+  <td><code>LLMExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small><br><code>RuleExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>.__init__() node in stackcheck/client/hiringcafe.py.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>test_rule_extractor_positional_weighting()</code><br><small style="color:var(--muted)">tests/test_analyzer.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>RuleExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>test_segment_job_description()</code><br><small style="color:var(--muted)">tests/test_analyzer.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>segment_job_description()</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>test_hiringcafe_client_structure()</code><br><small style="color:var(--muted)">tests/test_client.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>HiringCafeClient</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>test_hiringcafe_job_parsing()</code><br><small style="color:var(--muted)">tests/test_client.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>HiringCafeClient</code><br><small style="color:var(--muted)">stackcheck/client/hiringcafe.py</small><br><code>RuleExtractor</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>Pattern</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Pattern node in project.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>Any</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Any node in project.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>test_analyzer.py</code><br><small style="color:var(--muted)">tests/test_analyzer.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>analyzer rule extractor</code><br><code>models.py</code><br><small style="color:var(--muted)">src/stackcheck/models.py</small><br><code>pytest</code><br>+2 more</td>
+  <td>Module file in tests/test_analyzer.py.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>test_client.py</code><br><small style="color:var(--muted)">tests/test_client.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>analyzer rule extractor</code><br><code>models.py</code><br><small style="color:var(--muted)">src/stackcheck/models.py</small><br><code>stackcheck_client_hiringcafe</code><br>+1 more</td>
+  <td>Module file in tests/test_client.py.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>LLM parser for nuanced job posting extraction.</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for LLM parser for nuanced job posting extraction..</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>Call Gemini or OpenAI API to extract structured skills from job text.</code><br><small style="color:var(--muted)">stackcheck/analyzer/llm_extractor.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Call Gemini or OpenAI API to extract structured skills from job text..</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>Compile regex pattern ensuring exact word boundaries and disambiguation.</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Compile regex pattern ensuring exact word boundaries and disambiguation..</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>Rule-based extractor combining section weights and boundary regexes.</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Rule-based extractor combining section weights and boundary regexes..</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>Extract skills from a specific text chunk with given section weighting.</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Extract skills from a specific text chunk with given section weighting..</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>Processes a full job description: 1. Segments into Requirements,…</code><br><small style="color:var(--muted)">stackcheck/analyzer/rule_extractor.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Processes a full job description: 1. Segments into Requirements,….</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>stackcheck/analyzer/rule_extractor.py</code></td><td>15 nodes</td></tr>
+<tr><td><code>stackcheck/analyzer/llm_extractor.py</code></td><td>10 nodes</td></tr>
+<tr><td><code>stackcheck/client/hiringcafe.py</code></td><td>5 nodes</td></tr>
+<tr><td><code>tests/test_analyzer.py</code></td><td>4 nodes</td></tr>
+<tr><td><code>tests/test_client.py</code></td><td>4 nodes</td></tr>
+<tr><td><code>src/stackcheck/models.py</code></td><td>3 nodes</td></tr>
+<tr><td><code>stackcheck/analyzer/taxonomy.py</code></td><td>2 nodes</td></tr>
+<tr><td><code>stackcheck/client/normalizer.py</code></td><td>2 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: imports x43, imports x26, explains x22, calls x11. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 3. Analysis & Clustering ====== -->
+<h2 id="analysis-clustering">3. Analysis &amp; Clustering</h2>
+<p>Analysis &amp; Clustering groups implementation around stackcheck, storage, syncpy, community, mostly in stackcheck/storage/sync.py, src/stackcheck/cli.py. This section covers 10 nodes and 10 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Analysis &amp; Clustering (10 nodes, 10 edges)
+    subgraph analysis_clustering_stackcheck_storage_sync_py_15b470c5["stackcheck/storage/sync.py"]
+        src_stackcheck_storage_sync_communitysyncclient_aee08a0d("CommunitySyncClient<br/><small>stackcheck/storage/sync.py</small>")
+        src_stackcheck_storage_sync_communitysyncclient_528563fe("__init__()<br/><small>stackcheck/storage/sync.py</small>")
+        src_stackcheck_storage_sync_communitysyncclient_c892e3d4("push_search_aggregates()<br/><small>stackcheck/storage/sync.py</small>")
+        src_stackcheck_storage_sync_communitysyncclient_39137834("fetch_community_benchmarks()<br/><small>stackcheck/storage/sync.py</small>")
+        src_stackcheck_storage_sync_rationale_27_dd450786("Anonymously submits top skill frequenci...<br/><small>stackcheck/storage/sync.py</small>")
+        src_stackcheck_storage_sync_rationale_19_5f899656("Client for pushing anonymous search tre...<br/><small>stackcheck/storage/sync.py</small>")
+        src_stackcheck_storage_sync_rationale_56_4a0703d1("Pull community global benchmark trends...<br/><small>stackcheck/storage/sync.py</small>")
+    end
+    subgraph analysis_clustering_src_stackcheck_cli_py_97f06cb3["src/stackcheck/cli.py"]
+        src_stackcheck_cli_sync_23e6449d("sync()<br/><small>src/stackcheck/cli.py</small>")
+        src_stackcheck_cli_rationale_372_7dd99561("Sync telemetry and pull global communit...<br/><small>src/stackcheck/cli.py</small>")
+    end
+    src_stackcheck_storage_sync_py_any_dcb3658c("Any")
+    src_stackcheck_storage_sync_communitysyncclient_aee08a0d -->|method| src_stackcheck_storage_sync_communitysyncclient_528563fe
+    src_stackcheck_storage_sync_communitysyncclient_aee08a0d -->|method| src_stackcheck_storage_sync_communitysyncclient_c892e3d4
+    src_stackcheck_storage_sync_communitysyncclient_aee08a0d -->|method| src_stackcheck_storage_sync_communitysyncclient_39137834
+    src_stackcheck_cli_sync_23e6449d -->|uses| src_stackcheck_storage_sync_communitysyncclient_aee08a0d
+    class src_stackcheck_storage_sync_communitysyncclient_aee08a0d entry;
+    class src_stackcheck_storage_sync_communitysyncclient_528563fe function;
+    class src_stackcheck_storage_sync_communitysyncclient_c892e3d4 function;
+    class src_stackcheck_storage_sync_communitysyncclient_39137834 function;
+    class src_stackcheck_storage_sync_rationale_27_dd450786 concept;
+    class src_stackcheck_storage_sync_rationale_19_5f899656 concept;
+    class src_stackcheck_storage_sync_rationale_56_4a0703d1 concept;
+    class src_stackcheck_cli_sync_23e6449d function;
+    class src_stackcheck_cli_rationale_372_7dd99561 concept;
+    class src_stackcheck_storage_sync_py_any_dcb3658c klass;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>CommunitySyncClient</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>cli.py</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>sync()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small><br><code>AggregatedStats</code><br><small style="color:var(--muted)">src/stackcheck/models.py</small><br><code>fetch_community_benchmarks()</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small><br>+3 more</td>
+  <td>CommunitySyncClient node in stackcheck/storage/sync.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>sync()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>CommunitySyncClient</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td>sync() node in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>.fetch_community_benchmarks()</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>CommunitySyncClient</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td><code>aggregate()</code><br><small style="color:var(--muted)">stackcheck/analyzer/metrics.py</small></td>
+  <td>.fetch_community_benchmarks() node in stackcheck/storage/sync.py.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>CommunitySyncClient</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.__init__() node in stackcheck/storage/sync.py.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>.push_search_aggregates()</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>CommunitySyncClient</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.push_search_aggregates() node in stackcheck/storage/sync.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>Any</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Any node in project.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>Sync telemetry and pull global community benchmark statistics.</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Sync telemetry and pull global community benchmark statistics..</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>Client for pushing anonymous search trends and pulling community aggregate…</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Client for pushing anonymous search trends and pulling community aggregate….</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>Anonymously submits top skill frequencies and regional breakdowns to the…</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Anonymously submits top skill frequencies and regional breakdowns to the….</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>Pull community global benchmark trends from central hub if online, otherwise…</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Pull community global benchmark trends from central hub if online, otherwise….</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>stackcheck/storage/sync.py</code></td><td>7 nodes</td></tr>
+<tr><td><code>src/stackcheck/cli.py</code></td><td>2 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: explains x4, method x3, references x2, uses x1. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 4. CLI & Skill Installers ====== -->
+<h2 id="cli-skills">4. CLI &amp; Skill Installers</h2>
+<p>CLI &amp; Skill Installers groups implementation around installsh, step, clear, line, mostly in install.sh. This section covers 8 nodes and 12 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: CLI &amp; Skill Installers (8 nodes, 12 edges)
+    install_sh_entry_0b61c65f("install.sh script<br/><small>install.sh</small>")
+    install_download_with_progress_9ac2f918("download_with_progress()<br/><small>install.sh</small>")
+    install_step_warn_e70a54f7("step_warn()<br/><small>install.sh</small>")
+    install_step_header_bcc0d5e9("step_header()<br/><small>install.sh</small>")
+    install_step_error_c4b9413d("step_error()<br/><small>install.sh</small>")
+    install_step_item_3141d7a4("step_item()<br/><small>install.sh</small>")
+    install_clear_line_55531ae6("clear_line()<br/><small>install.sh</small>")
+    install_89fb511f("install.sh")
+    install_sh_entry_0b61c65f -->|calls| install_download_with_progress_9ac2f918
+    install_sh_entry_0b61c65f -->|calls| install_step_warn_e70a54f7
+    install_sh_entry_0b61c65f -->|calls| install_step_header_bcc0d5e9
+    install_sh_entry_0b61c65f -->|calls| install_step_error_c4b9413d
+    install_sh_entry_0b61c65f -->|calls| install_step_item_3141d7a4
+    class install_sh_entry_0b61c65f function;
+    class install_download_with_progress_9ac2f918 function;
+    class install_step_warn_e70a54f7 function;
+    class install_step_header_bcc0d5e9 function;
+    class install_step_error_c4b9413d function;
+    class install_step_item_3141d7a4 function;
+    class install_clear_line_55531ae6 function;
+    class install_89fb511f function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>install.sh</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>install.sh node in install.sh.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>clear_line()</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>clear_line() node in install.sh.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>download_with_progress()</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>install.sh script</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td>No direct outbound edge</td>
+  <td>download_with_progress() node in install.sh.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>install.sh script</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>download_with_progress()</code><br><small style="color:var(--muted)">install.sh</small><br><code>step_error()</code><br><small style="color:var(--muted)">install.sh</small><br><code>step_header()</code><br><small style="color:var(--muted)">install.sh</small><br>+2 more</td>
+  <td>install.sh script node in install.sh.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>step_error()</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>install.sh script</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td>No direct outbound edge</td>
+  <td>step_error() node in install.sh.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>step_header()</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>install.sh script</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td>No direct outbound edge</td>
+  <td>step_header() node in install.sh.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>step_item()</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>install.sh script</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td>No direct outbound edge</td>
+  <td>step_item() node in install.sh.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>step_warn()</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>install.sh script</code><br><small style="color:var(--muted)">install.sh</small></td>
+  <td>No direct outbound edge</td>
+  <td>step_warn() node in install.sh.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>install.sh</code></td><td>8 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: defines x6, calls x5, contains x1. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 5. Ingestion & Updates ====== -->
+<h2 id="ingest-cache-update">5. Ingestion &amp; Updates</h2>
+<p>Ingestion &amp; Updates groups implementation around stackcheck, updaterpy, check, asset, mostly in src/stackcheck/updater.py, src/stackcheck/cli.py, tests/test_launcher.py. This section covers 16 nodes and 21 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Ingestion &amp; Updates (16 nodes, 21 edges)
+    subgraph ingest_cache_update_src_stackcheck_updater_py_f4abba06["src/stackcheck/updater.py"]
+        src_stackcheck_updater_updatechecker_6e429bea("UpdateChecker<br/><small>src/stackcheck/updater.py</small>")
+        src_stackcheck_updater_updatechecker_download_as_bfed468e("download_asset()<br/><small>src/stackcheck/updater.py</small>")
+        src_stackcheck_updater_updatechecker_get_install_17eb49c9("get_install_target_path()<br/><small>src/stackcheck/updater.py</small>")
+        src_stackcheck_updater_updatechecker_get_target_99372ceb("get_target_asset_name()<br/><small>src/stackcheck/updater.py</small>")
+        src_stackcheck_updater_updatechecker_check_for_u_1c6ad5ed("check_for_update()<br/><small>src/stackcheck/updater.py</small>")
+        src_stackcheck_updater_rationale_49_2284e7d1("Check GitHub Releases for a newer versi...<br/><small>src/stackcheck/updater.py</small>")
+        src_stackcheck_updater_rationale_26_f2ef3ab9("Checks for newer releases of StackCheck...<br/><small>src/stackcheck/updater.py</small>")
+        src_stackcheck_updater_rationale_146_573b4ed6("Determine path of the executable to rep...<br/><small>src/stackcheck/updater.py</small>")
+        src_stackcheck_updater_rationale_30_566d2134("Determine release asset binary name for...<br/><small>src/stackcheck/updater.py</small>")
+        src_stackcheck_updater_rationale_109_e9c92570("Stream download asset with chunked prog...<br/><small>src/stackcheck/updater.py</small>")
+    end
+    subgraph ingest_cache_update_src_stackcheck_cli_py_2a955a8a["src/stackcheck/cli.py"]
+        src_stackcheck_cli_update_f11a6b30("update()<br/><small>src/stackcheck/cli.py</small>")
+        src_stackcheck_cli_update_progress_cb_eb05cbb5("progress_cb()<br/><small>src/stackcheck/cli.py</small>")
+        src_stackcheck_cli_rationale_87_ea21d246("Check for latest release updates and up...<br/><small>src/stackcheck/cli.py</small>")
+    end
+    subgraph ingest_cache_update_External_generated_9d67cab5["External / generated"]
+        src_stackcheck_updater_py_any_af91ca0e("Any")
+        src_stackcheck_updater_py_path_de6f4466("Path")
+    end
+    tests_test_launcher_test_updater_check_offline_o_c63ee8f7("offline or invalid()<br/><small>tests/test_launcher.py</small>")
+    src_stackcheck_updater_updatechecker_6e429bea -->|method| src_stackcheck_updater_updatechecker_download_as_bfed468e
+    src_stackcheck_updater_updatechecker_6e429bea -->|method| src_stackcheck_updater_updatechecker_get_install_17eb49c9
+    src_stackcheck_updater_updatechecker_6e429bea -->|method| src_stackcheck_updater_updatechecker_get_target_99372ceb
+    src_stackcheck_updater_updatechecker_6e429bea -->|method| src_stackcheck_updater_updatechecker_check_for_u_1c6ad5ed
+    src_stackcheck_cli_update_f11a6b30 -->|calls| src_stackcheck_updater_updatechecker_get_install_17eb49c9
+    src_stackcheck_cli_update_f11a6b30 -->|calls| src_stackcheck_updater_updatechecker_download_as_bfed468e
+    src_stackcheck_cli_update_f11a6b30 -->|calls| src_stackcheck_updater_updatechecker_check_for_u_1c6ad5ed
+    src_stackcheck_updater_updatechecker_check_for_u_1c6ad5ed -->|calls| src_stackcheck_updater_updatechecker_get_target_99372ceb
+    tests_test_launcher_test_updater_check_offline_o_c63ee8f7 -->|calls| src_stackcheck_updater_updatechecker_check_for_u_1c6ad5ed
+    src_stackcheck_cli_update_f11a6b30 -->|uses| src_stackcheck_updater_updatechecker_6e429bea
+    tests_test_launcher_test_updater_check_offline_o_c63ee8f7 -->|uses| src_stackcheck_updater_updatechecker_6e429bea
+    class src_stackcheck_updater_updatechecker_6e429bea klass;
+    class src_stackcheck_updater_updatechecker_download_as_bfed468e async;
+    class src_stackcheck_updater_updatechecker_get_install_17eb49c9 function;
+    class src_stackcheck_updater_updatechecker_get_target_99372ceb async;
+    class src_stackcheck_updater_updatechecker_check_for_u_1c6ad5ed function;
+    class src_stackcheck_updater_rationale_49_2284e7d1 concept;
+    class src_stackcheck_updater_rationale_26_f2ef3ab9 concept;
+    class src_stackcheck_updater_rationale_146_573b4ed6 concept;
+    class src_stackcheck_updater_rationale_30_566d2134 concept;
+    class src_stackcheck_updater_rationale_109_e9c92570 concept;
+    class src_stackcheck_cli_update_f11a6b30 function;
+    class src_stackcheck_cli_update_progress_cb_eb05cbb5 function;
+    class src_stackcheck_cli_rationale_87_ea21d246 concept;
+    class src_stackcheck_updater_py_any_af91ca0e klass;
+    class src_stackcheck_updater_py_path_de6f4466 klass;
+    class tests_test_launcher_test_updater_check_offline_o_c63ee8f7 test;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>UpdateChecker</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>app.py</code><br><small style="color:var(--muted)">stackcheck/web/app.py</small><br><code>cli.py</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>main()</code><br><small style="color:var(--muted)">stackcheck/web/app.py</small><br>+2 more</td>
+  <td><code>check_for_update()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small><br><code>download_asset()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small><br><code>get_install_target_path()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small><br>+1 more</td>
+  <td>UpdateChecker node in src/stackcheck/updater.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>update()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>check_for_update()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small><br><code>download_asset()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small><br><code>get_install_target_path()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small><br>+2 more</td>
+  <td>update() node in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>progress_cb()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>update()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>progress_cb() node in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>.check_for_update()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>main()</code><br><small style="color:var(--muted)">stackcheck/web/app.py</small><br><code>offline or invalid()</code><br><small style="color:var(--muted)">tests/test_launcher.py</small><br><code>update()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br>+1 more</td>
+  <td><code>get_target_asset_name()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td>.check_for_update() node in src/stackcheck/updater.py.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>.download_asset()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td><code>main()</code><br><small style="color:var(--muted)">stackcheck/web/app.py</small><br><code>update()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>UpdateChecker</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.download_asset() node in src/stackcheck/updater.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>.get_install_target_path()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>main()</code><br><small style="color:var(--muted)">stackcheck/web/app.py</small><br><code>update()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>UpdateChecker</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.get_install_target_path() node in src/stackcheck/updater.py.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>.get_target_asset_name()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td><code>check_for_update()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small><br><code>UpdateChecker</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.get_target_asset_name() node in src/stackcheck/updater.py.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>test_updater_check_offline_or_invalid()</code><br><small style="color:var(--muted)">tests/test_launcher.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>check_for_update()</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small><br><code>UpdateChecker</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>Any</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Any node in project.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>Path</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Path node in project.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>Check for latest release updates and upgrade in-place.</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Check for latest release updates and upgrade in-place..</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>Stream download asset with chunked progress callback. progress_callback…</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Stream download asset with chunked progress callback. progress_callback….</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>Determine path of the executable to replace.</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Determine path of the executable to replace..</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>Checks for newer releases of StackCheck from GitHub Releases.</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Checks for newer releases of StackCheck from GitHub Releases..</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>Determine release asset binary name for current platform.</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Determine release asset binary name for current platform..</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>Check GitHub Releases for a newer version. Returns release metadata dict if a…</code><br><small style="color:var(--muted)">src/stackcheck/updater.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Check GitHub Releases for a newer version. Returns release metadata dict if a….</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>src/stackcheck/updater.py</code></td><td>10 nodes</td></tr>
+<tr><td><code>src/stackcheck/cli.py</code></td><td>3 nodes</td></tr>
+<tr><td><code>tests/test_launcher.py</code></td><td>1 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: explains x6, calls x5, method x4, references x3. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 6. Tests & Fixtures ====== -->
+<h2 id="tests-fixtures">6. Tests &amp; Fixtures</h2>
+<p>Tests &amp; Fixtures groups implementation around stackcheck, test, clipy, storage, mostly in src/stackcheck/cli.py, stackcheck/storage/repository.py, src/stackcheck/launcher.py. This section covers 224 nodes and 484 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Tests &amp; Fixtures (224 nodes, 484 edges)
+    subgraph tests_fixtures_stackcheck_analyzer_metrics_py_1091e6e2["stackcheck/analyzer/metrics.py"]
+        src_stackcheck_analyzer_metrics_metricsengine_e30140a4("MetricsEngine<br/><small>stackcheck/analyzer/metrics.py</small>")
+        src_stackcheck_analyzer_metrics_metricsengine_to_88dede5e("to_jobs_dataframe()<br/><small>stackcheck/analyzer/metrics.py</small>")
+        src_stackcheck_analyzer_metrics_metricsengine_ag_852eadfa("aggregate()<br/><small>stackcheck/analyzer/metrics.py</small>")
+        src_stackcheck_analyzer_metrics_metricsengine_to_e35be7b6("to_skills_dataframe()<br/><small>stackcheck/analyzer/metrics.py</small>")
+    end
+    subgraph tests_fixtures_stackcheck_storage_exporters_py_23427a24["stackcheck/storage/exporters.py"]
+        src_stackcheck_storage_exporters_reportexporter_bdfcf66b("ReportExporter<br/><small>stackcheck/storage/exporters.py</small>")
+        src_stackcheck_storage_exporters_reportexporter_a7499069("export_json()<br/><small>stackcheck/storage/exporters.py</small>")
+        src_stackcheck_storage_exporters_reportexporter_e11c763f("export_csv()<br/><small>stackcheck/storage/exporters.py</small>")
+        src_stackcheck_storage_exporters_reportexporter_bb6f96a0("export_markdown()<br/><small>stackcheck/storage/exporters.py</small>")
+    end
+    subgraph tests_fixtures_src_stackcheck_models_py_3d01bd34["src/stackcheck/models.py"]
+        src_stackcheck_models_jobpost_c42e5664("JobPost<br/><small>src/stackcheck/models.py</small>")
+        src_stackcheck_models_jobpost_sync_apply_url_9c5de218("sync_apply_url()<br/><small>src/stackcheck/models.py</small>")
+        src_stackcheck_models_jobpost_link_3a386e6f("link()<br/><small>src/stackcheck/models.py</small>")
+    end
+    subgraph tests_fixtures_src_stackcheck_cli_py_9736bb39["src/stackcheck/cli.py"]
+        src_stackcheck_cli_d5e77117("cli.py")
+        src_stackcheck_cli_search_399a34f4("search()<br/><small>src/stackcheck/cli.py</small>")
+    end
+    subgraph tests_fixtures_stackcheck_web_app_py_424c6e32["stackcheck/web/app.py"]
+        src_stackcheck_web_app_804eb007("app.py")
+        src_stackcheck_web_app_main_bd0acace("main()<br/><small>stackcheck/web/app.py</small>")
+    end
+    src_stackcheck_client_normalizer_jobnormalizer_1b1212af("JobNormalizer<br/><small>stackcheck/client/normalizer.py</small>")
+    src_stackcheck_storage_repository_jobrepository_74e1ef79("JobRepository<br/><small>stackcheck/storage/repository.py</small>")
+    tests_test_storage_test_exporters_1df1689e("test_exporters()<br/><small>tests/test_storage.py</small>")
+    src_stackcheck_analyzer_metrics_metricsengine_e30140a4 -->|method| src_stackcheck_analyzer_metrics_metricsengine_to_88dede5e
+    src_stackcheck_analyzer_metrics_metricsengine_e30140a4 -->|method| src_stackcheck_analyzer_metrics_metricsengine_ag_852eadfa
+    src_stackcheck_analyzer_metrics_metricsengine_e30140a4 -->|method| src_stackcheck_analyzer_metrics_metricsengine_to_e35be7b6
+    src_stackcheck_models_jobpost_c42e5664 -->|method| src_stackcheck_models_jobpost_sync_apply_url_9c5de218
+    src_stackcheck_models_jobpost_c42e5664 -->|method| src_stackcheck_models_jobpost_link_3a386e6f
+    src_stackcheck_storage_exporters_reportexporter_bdfcf66b -->|method| src_stackcheck_storage_exporters_reportexporter_a7499069
+    src_stackcheck_storage_exporters_reportexporter_bdfcf66b -->|method| src_stackcheck_storage_exporters_reportexporter_e11c763f
+    src_stackcheck_storage_exporters_reportexporter_bdfcf66b -->|method| src_stackcheck_storage_exporters_reportexporter_bb6f96a0
+    src_stackcheck_cli_search_399a34f4 -->|calls| src_stackcheck_analyzer_metrics_metricsengine_ag_852eadfa
+    src_stackcheck_cli_search_399a34f4 -->|calls| src_stackcheck_storage_exporters_reportexporter_a7499069
+    src_stackcheck_cli_search_399a34f4 -->|calls| src_stackcheck_storage_exporters_reportexporter_e11c763f
+    src_stackcheck_cli_search_399a34f4 -->|calls| src_stackcheck_storage_exporters_reportexporter_bb6f96a0
+    tests_test_storage_test_exporters_1df1689e -->|calls| src_stackcheck_analyzer_metrics_metricsengine_ag_852eadfa
+    tests_test_storage_test_exporters_1df1689e -->|calls| src_stackcheck_storage_exporters_reportexporter_a7499069
+    tests_test_storage_test_exporters_1df1689e -->|calls| src_stackcheck_storage_exporters_reportexporter_e11c763f
+    tests_test_storage_test_exporters_1df1689e -->|calls| src_stackcheck_storage_exporters_reportexporter_bb6f96a0
+    src_stackcheck_web_app_main_bd0acace -->|calls| src_stackcheck_analyzer_metrics_metricsengine_ag_852eadfa
+    src_stackcheck_web_app_main_bd0acace -->|calls| src_stackcheck_analyzer_metrics_metricsengine_to_88dede5e
+    src_stackcheck_web_app_main_bd0acace -->|calls| src_stackcheck_storage_exporters_reportexporter_bb6f96a0
+    src_stackcheck_cli_d5e77117 -->|imports| src_stackcheck_analyzer_metrics_metricsengine_e30140a4
+    src_stackcheck_cli_d5e77117 -->|imports| src_stackcheck_storage_repository_jobrepository_74e1ef79
+    src_stackcheck_cli_d5e77117 -->|imports| src_stackcheck_storage_exporters_reportexporter_bdfcf66b
+    src_stackcheck_web_app_804eb007 -->|imports| src_stackcheck_client_normalizer_jobnormalizer_1b1212af
+    src_stackcheck_web_app_804eb007 -->|imports| src_stackcheck_analyzer_metrics_metricsengine_e30140a4
+    %% Omitted for readability: 206 nodes, 14 edges
+    class src_stackcheck_analyzer_metrics_metricsengine_e30140a4 klass;
+    class src_stackcheck_analyzer_metrics_metricsengine_to_88dede5e function;
+    class src_stackcheck_analyzer_metrics_metricsengine_ag_852eadfa function;
+    class src_stackcheck_analyzer_metrics_metricsengine_to_e35be7b6 function;
+    class src_stackcheck_storage_exporters_reportexporter_bdfcf66b klass;
+    class src_stackcheck_storage_exporters_reportexporter_a7499069 function;
+    class src_stackcheck_storage_exporters_reportexporter_e11c763f function;
+    class src_stackcheck_storage_exporters_reportexporter_bb6f96a0 function;
+    class src_stackcheck_models_jobpost_c42e5664 klass;
+    class src_stackcheck_models_jobpost_sync_apply_url_9c5de218 function;
+    class src_stackcheck_models_jobpost_link_3a386e6f function;
+    class src_stackcheck_cli_d5e77117 entry;
+    class src_stackcheck_cli_search_399a34f4 function;
+    class src_stackcheck_web_app_804eb007 module;
+    class src_stackcheck_web_app_main_bd0acace function;
+    class src_stackcheck_client_normalizer_jobnormalizer_1b1212af klass;
+    class src_stackcheck_storage_repository_jobrepository_74e1ef79 klass;
+    class tests_test_storage_test_exporters_1df1689e test;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>list_projects()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>JobRepository</code><br><small style="color:var(--muted)">stackcheck/storage/repository.py</small></td>
+  <td>list_projects() node in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>main()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>launcher.py</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>test_cli_help()</code><br><small style="color:var(--muted)">tests/test_cli.py</small><br><code>test_cli_projects_list()</code><br><small style="color:var(--muted)">tests/test_cli.py</small><br>+2 more</td>
+  <td><code>launch()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>main() node in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>projects()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>projects() node in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>status()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>get_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>status() node in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>stop()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>get_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>stop_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>stop() node in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>web()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>launch()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>web() node in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>cleanup_instance_files()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>get_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>launch()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>stop_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br>+1 more</td>
+  <td>No direct outbound edge</td>
+  <td>cleanup_instance_files() node in src/stackcheck/launcher.py.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>get_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>app.py</code><br><small style="color:var(--muted)">stackcheck/web/app.py</small><br><code>cli.py</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>launch()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br>+5 more</td>
+  <td><code>cleanup_instance_files()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>is_port_listening()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>get_running_instance() node in src/stackcheck/launcher.py.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>is_port_listening()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>_worker()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>get_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>listening unused port()</code><br><small style="color:var(--muted)">tests/test_launcher.py</small><br>+1 more</td>
+  <td>No direct outbound edge</td>
+  <td>is_port_listening() node in src/stackcheck/launcher.py.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>launch()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>cli.py</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>main()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>web()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><code>and open browser()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>cleanup_instance_files()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>find_free_port()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br>+1 more</td>
+  <td>launch() node in src/stackcheck/launcher.py.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>stop_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>app.py</code><br><small style="color:var(--muted)">stackcheck/web/app.py</small><br><code>cli.py</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>main()</code><br><small style="color:var(--muted)">stackcheck/web/app.py</small><br>+2 more</td>
+  <td><code>cleanup_instance_files()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>get_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>is_port_listening()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>stop_running_instance() node in src/stackcheck/launcher.py.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>wait_for_server_and_open_browser()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>launch()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td><code>_worker()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>wait_for_server_and_open_browser() node in src/stackcheck/launcher.py.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>_worker()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>and open browser()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td><code>is_port_listening()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>_worker() node in src/stackcheck/launcher.py.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>test_cli_help()</code><br><small style="color:var(--muted)">tests/test_cli.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>main()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>test_cli_projects_list()</code><br><small style="color:var(--muted)">tests/test_cli.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>main()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>test_cli_status()</code><br><small style="color:var(--muted)">tests/test_cli.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>main()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>test_cli_stop()</code><br><small style="color:var(--muted)">tests/test_cli.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>main()</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>test_launcher_config_sets_production_mode()</code><br><small style="color:var(--muted)">tests/test_cli.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Reads, resolves, or persists project configuration.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>test_instance_tracking_and_cleanup()</code><br><small style="color:var(--muted)">tests/test_launcher.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>cleanup_instance_files()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>get_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>stop_running_instance()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>test_is_port_listening_unused_port()</code><br><small style="color:var(--muted)">tests/test_launcher.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>is_port_listening()</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small></td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>group</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>group node in project.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>pass_context</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>pass_context node in project.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>cli.py</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>launcher.py</code><br><small style="color:var(--muted)">src/stackcheck/launcher.py</small><br><code>test_cli.py</code><br><small style="color:var(--muted)">tests/test_cli.py</small></td>
+  <td><code>click</code><br><code>CommunitySyncClient</code><br><small style="color:var(--muted)">stackcheck/storage/sync.py</small><br><code>ExperienceLevel</code><br><small style="color:var(--muted)">src/stackcheck/models.py</small><br>+22 more</td>
+  <td>Module file in src/stackcheck/cli.py.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>Any</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Any node in project.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>test_cli.py</code><br><small style="color:var(--muted)">tests/test_cli.py</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>cli.py</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small><br><code>click_testing</code><br><code>streamlit</code></td>
+  <td>Module file in tests/test_cli.py.</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>CLI Interface for StackCheck. Provides commands for searching, analyzing,…</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for CLI Interface for StackCheck. Provides commands for searching, analyzing,….</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>StackCheck: Tech Stack Intelligence Engine &amp; Data Analytics Dashboard.</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for StackCheck: Tech Stack Intelligence Engine &amp; Data Analytics Dashboard..</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>Manage research projects and scopes.</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Manage research projects and scopes..</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>List all research projects with job counts.</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for List all research projects with job counts..</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>Launch the interactive Streamlit Web Dashboard.</code><br><small style="color:var(--muted)">src/stackcheck/cli.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Launch the interactive Streamlit Web Dashboard..</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>src/stackcheck/cli.py</code></td><td>25 nodes</td></tr>
+<tr><td><code>stackcheck/storage/repository.py</code></td><td>19 nodes</td></tr>
+<tr><td><code>src/stackcheck/launcher.py</code></td><td>18 nodes</td></tr>
+<tr><td><code>stackcheck/client/normalizer.py</code></td><td>17 nodes</td></tr>
+<tr><td><code>src/stackcheck/models.py</code></td><td>14 nodes</td></tr>
+<tr><td><code>stackcheck/web/charts.py</code></td><td>12 nodes</td></tr>
+<tr><td><code>stackcheck/analyzer/metrics.py</code></td><td>9 nodes</td></tr>
+<tr><td><code>stackcheck/web/app.py</code></td><td>7 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x85, uses x83, imports x67, explains x59. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 7. web/__init__.py ====== -->
+<h2 id="web-init-py">7. web/__init__.py</h2>
+<p>web/__init__.py groups implementation around web, stackcheck, dashboard, module, mostly in stackcheck/web/__init__.py. This section covers 2 nodes and 1 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: web/__init__.py (2 nodes, 1 edges)
+    src_stackcheck_web_init_rationale_1_34421e71("StackCheck Web Dashboard Module.<br/><small>stackcheck/web/__init__.py</small>")
+    src_stackcheck_web_init_3704940f("__init__.py")
+    src_stackcheck_web_init_rationale_1_34421e71 -->|explains| src_stackcheck_web_init_3704940f
+    class src_stackcheck_web_init_rationale_1_34421e71 concept;
+    class src_stackcheck_web_init_3704940f module;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>web/__init__.py</code><br><small style="color:var(--muted)">stackcheck/web/__init__.py</small></td>
+  <td><span class="tag tag-class">Module</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Module file in stackcheck/web/__init__.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>StackCheck Web Dashboard Module.</code><br><small style="color:var(--muted)">stackcheck/web/__init__.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for StackCheck Web Dashboard Module..</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>stackcheck/web/__init__.py</code></td><td>2 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: explains x1. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 8. stackcheck ====== -->
+<h2 id="stackcheck">8. stackcheck</h2>
+<p>stackcheck groups implementation around stackcheck, pyprojecttoml, mostly in pyproject.toml. This section covers 1 nodes and 0 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: stackcheck (1 nodes, 0 edges)
+    pkg_stackcheck_a12492cd("stackcheck<br/><small>pyproject.toml</small>")
+    class pkg_stackcheck_a12492cd module;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>stackcheck</code><br><small style="color:var(--muted)">pyproject.toml</small></td>
+  <td><span class="tag tag-class">Module</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>stackcheck node in pyproject.toml.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>pyproject.toml</code></td><td>1 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: No high-confidence call edges detected. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<h2 id="stats">Project Statistics</h2>
+
+<div class="grid">
+  <div class="card">
+    <h4>Graph</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><td>Nodes</td><td>338</td></tr>
+      <tr><td>Edges</td><td>785</td></tr>
+      <tr><td>Hyperedges</td><td>0</td></tr>
+      <tr><td>Communities</td><td>13</td></tr>
+      <tr><td>Documented Sections</td><td>7</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Edge Confidence</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><td>EXTRACTED</td><td>662</td></tr>
+      <tr><td>INFERRED</td><td>123</td></tr>
+      <tr><td>AMBIGUOUS</td><td>0</td></tr>
+    </table>
+  </div>
+</div>
+
+<div style="text-align:center; padding:40px 0; color: var(--muted); font-size:0.9rem;">
+  <p>StackCheck — Architecture Documentation</p>
+  <p>Generated: 2026-10-04 07:29 UTC · graphify callflow-html</p>
+</div>
+
+</div><!-- .container -->
+
+<script>
+(function () {
+  const mermaidConfig = {
+    startOnLoad: false,
+    theme: 'dark',
+    securityLevel: 'loose',
+    flowchart: { htmlLabels: true, useMaxWidth: true },
+    themeVariables: {
+      primaryColor: '#1e293b',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#38bdf8',
+      secondaryColor: '#0f172a',
+      tertiaryColor: '#334155',
+      lineColor: '#64748b',
+      textColor: '#e2e8f0',
+    }
+  };
+
+  mermaid.initialize(mermaidConfig);
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function enhanceMermaidDiagrams() {
+    document.querySelectorAll('.mermaid').forEach((container) => {
+      if (container.dataset.zoomReady === 'true') return;
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+
+      container.dataset.zoomReady = 'true';
+      container.classList.add('is-enhanced');
+
+      const viewport = document.createElement('div');
+      viewport.className = 'mermaid-viewport';
+      svg.parentNode.insertBefore(viewport, svg);
+      viewport.appendChild(svg);
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'mermaid-toolbar';
+      toolbar.innerHTML = [
+        '<button type="button" data-action="zoom-out" title="Zoom out">-</button>',
+        '<span class="zoom-level" data-role="level">100%</span>',
+        '<button type="button" data-action="zoom-in" title="Zoom in">+</button>',
+        '<button type="button" data-action="fit" title="Fit width">Fit</button>',
+        '<button type="button" data-action="reset" title="Reset view">Reset</button>'
+      ].join('');
+      container.insertBefore(toolbar, viewport);
+
+      const state = { scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0, originX: 0, originY: 0 };
+      const level = toolbar.querySelector('[data-role="level"]');
+
+      function applyTransform() {
+        svg.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+        level.textContent = `${Math.round(state.scale * 100)}%`;
+      }
+
+      function zoomBy(delta) {
+        state.scale = clamp(state.scale + delta, 0.25, 3);
+        applyTransform();
+      }
+
+      function reset() {
+        state.scale = 1;
+        state.x = 0;
+        state.y = 0;
+        applyTransform();
+      }
+
+      function fitWidth() {
+        const rawWidth = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width
+          ? svg.viewBox.baseVal.width
+          : svg.getBoundingClientRect().width / state.scale;
+        if (!rawWidth) {
+          reset();
+          return;
+        }
+        state.scale = clamp((viewport.clientWidth - 48) / rawWidth, 0.25, 1.4);
+        state.x = 0;
+        state.y = 0;
+        applyTransform();
+      }
+
+      toolbar.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const action = button.dataset.action;
+        if (action === 'zoom-in') zoomBy(0.15);
+        if (action === 'zoom-out') zoomBy(-0.15);
+        if (action === 'fit') fitWidth();
+        if (action === 'reset') reset();
+      });
+
+      viewport.addEventListener('wheel', (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        zoomBy(event.deltaY < 0 ? 0.1 : -0.1);
+      }, { passive: false });
+
+      viewport.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        state.dragging = true;
+        state.startX = event.clientX;
+        state.startY = event.clientY;
+        state.originX = state.x;
+        state.originY = state.y;
+        viewport.classList.add('is-dragging');
+        viewport.setPointerCapture(event.pointerId);
+      });
+
+      viewport.addEventListener('pointermove', (event) => {
+        if (!state.dragging) return;
+        state.x = state.originX + event.clientX - state.startX;
+        state.y = state.originY + event.clientY - state.startY;
+        applyTransform();
+      });
+
+      function endDrag(event) {
+        if (!state.dragging) return;
+        state.dragging = false;
+        viewport.classList.remove('is-dragging');
+        if (viewport.hasPointerCapture(event.pointerId)) {
+          viewport.releasePointerCapture(event.pointerId);
+        }
+      }
+
+      viewport.addEventListener('pointerup', endDrag);
+      viewport.addEventListener('pointercancel', endDrag);
+      applyTransform();
+    });
+  }
+
+  function renderMermaid() {
+    const result = mermaid.run
+      ? mermaid.run({ querySelector: '.mermaid' })
+      : Promise.resolve();
+    Promise.resolve(result)
+      .then(enhanceMermaidDiagrams)
+      .catch((error) => {
+        console.error('Mermaid render failed:', error);
+        enhanceMermaidDiagrams();
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderMermaid);
+  } else {
+    renderMermaid();
+  }
+})();
+</script>
+
+</body>
+</html>
