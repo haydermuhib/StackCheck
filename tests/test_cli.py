@@ -7,6 +7,9 @@ from stackcheck.cli import main
 from streamlit import config
 
 
+from stackcheck import __version__
+
+
 def test_cli_help():
     runner = CliRunner()
     result = runner.invoke(main, ["--help"])
@@ -17,6 +20,25 @@ def test_cli_help():
     assert "web" in result.output
     assert "search" in result.output
     assert "update" in result.output
+    assert "--detach" in result.output or "-d" in result.output
+
+
+def test_cli_version():
+    runner = CliRunner()
+    res1 = runner.invoke(main, ["--version"])
+    assert res1.exit_code == 0
+    assert f"StackCheck v{__version__}" in res1.output
+
+    res2 = runner.invoke(main, ["-v"])
+    assert res2.exit_code == 0
+    assert f"StackCheck v{__version__}" in res2.output
+
+
+def test_cli_web_detach_flag():
+    runner = CliRunner()
+    result = runner.invoke(main, ["web", "--help"])
+    assert result.exit_code == 0
+    assert "--detach" in result.output or "-d" in result.output
 
 
 def test_cli_status():

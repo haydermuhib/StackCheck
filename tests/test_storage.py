@@ -2,7 +2,9 @@
 Tests for SQLite storage, repository, and export pipelines.
 """
 
+import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from stackcheck.models import JobPost, ExtractedSkill, SearchQuery, SalaryInfo, Region, WorkplaceType, ExperienceLevel, TechCategory
 from stackcheck.storage.db import DatabaseManager
@@ -11,8 +13,24 @@ from stackcheck.analyzer.metrics import MetricsEngine
 from stackcheck.storage.exporters import ReportExporter
 
 
+@contextmanager
+def safe_temp_dir():
+    """Temporary directory helper that safely handles Windows file locking on cleanup."""
+    kwargs = {}
+    if sys.version_info >= (3, 10):
+        kwargs["ignore_cleanup_errors"] = True
+    td = tempfile.TemporaryDirectory(**kwargs)
+    try:
+        yield td.name
+    finally:
+        try:
+            td.cleanup()
+        except Exception:
+            pass
+
+
 def test_repository_save_and_retrieve():
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with safe_temp_dir() as tmpdir:
         db_file = Path(tmpdir) / "test.db"
         db_mgr = DatabaseManager(db_path=db_file)
         repo = JobRepository(db_manager=db_mgr)
@@ -48,7 +66,7 @@ def test_repository_save_and_retrieve():
 
 
 def test_exporters():
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with safe_temp_dir() as tmpdir:
         job = JobPost(
             id="job123",
             title="Analytics Engineer",
@@ -77,7 +95,7 @@ def test_exporters():
 
 
 def test_project_isolation_and_crud():
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with safe_temp_dir() as tmpdir:
         db_file = Path(tmpdir) / "test_projects.db"
         db_mgr = DatabaseManager(db_path=db_file)
         repo = JobRepository(db_manager=db_mgr)
@@ -130,7 +148,7 @@ def test_project_isolation_and_crud():
 
 
 def test_duplicate_detection_and_apply_urls():
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with safe_temp_dir() as tmpdir:
         db_file = Path(tmpdir) / "test_dups.db"
         db_mgr = DatabaseManager(db_path=db_file)
         repo = JobRepository(db_manager=db_mgr)

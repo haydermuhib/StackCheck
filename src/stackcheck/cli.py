@@ -10,6 +10,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
 
+from stackcheck import __version__
 from stackcheck.models import SearchQuery, WorkplaceType, ExperienceLevel, Region
 from stackcheck.client.hiringcafe import HiringCafeClient
 from stackcheck.analyzer.metrics import MetricsEngine
@@ -21,20 +22,23 @@ console = Console()
 
 
 @click.group(invoke_without_command=True)
+@click.version_option(__version__, "-v", "--version", message="StackCheck v%(version)s")
+@click.option("-d", "--detach", is_flag=True, default=False, help="Run the Web Dashboard as a background detached service.")
 @click.pass_context
-def main(ctx):
+def main(ctx, detach):
     """StackCheck: Tech Stack Intelligence Engine & Data Analytics Dashboard."""
     if ctx.invoked_subcommand is None:
         # Default behavior: Launch Web Dashboard
         from stackcheck.launcher import launch
-        launch()
+        launch(detach=detach)
 
 
 @main.command()
-def web():
+@click.option("-d", "--detach", is_flag=True, default=False, help="Run the Web Dashboard as a background detached service.")
+def web(detach):
     """Launch the interactive Streamlit Web Dashboard."""
     from stackcheck.launcher import launch
-    launch()
+    launch(detach=detach)
 
 
 @main.command()
@@ -45,39 +49,46 @@ def stop():
     if info:
         pid = info.get("pid")
         port = info.get("port")
-        stopped = stop_running_instance()
+        with console.status("[bold cyan]Stopping StackCheck server...", spinner="dots"):
+            stopped = stop_running_instance()
         if stopped:
-            console.print(f"[bold green]✔ Stopped StackCheck server (PID {pid}, port {port} released).[/]")
+            console.print(f"[bold green]✔[/bold green] Stopped StackCheck server (PID {pid}, port {port} released).")
         else:
-            console.print("[yellow]Could not stop server process cleanly.[/]")
+            console.print("[bold red]✘[/bold red] [yellow]Could not stop server process cleanly.[/]")
     else:
-        console.print("[yellow]StackCheck is not currently running.[/]")
+        console.print("[dim]ℹ️  StackCheck is not currently running.[/]")
 
 
 @main.command()
 def status():
     """Check the health and runtime status of the StackCheck dashboard."""
     import time
-    from stackcheck.launcher import get_running_instance
+    from stackcheck.launcher import get_running_instance, STACKCHECK_DIR
     info = get_running_instance()
     if info:
         uptime_s = int(time.time() - info.get("start_time", time.time()))
-        table = Table(title="🟢 StackCheck Server Status", border_style="green")
+        mins, secs = divmod(uptime_s, 60)
+        uptime_display = f"{mins}m {secs}s" if mins else f"{secs}s"
+
+        table = Table(title="🟢 StackCheck Server Status", border_style="green", header_style="bold green")
         table.add_column("Property", style="bold white")
         table.add_column("Value", style="cyan")
-        table.add_row("Status", "[bold green]Active (Listening)[/]")
-        table.add_row("Local URL", str(info.get("url")))
+        table.add_row("Status", "[bold green]● Active (Listening)[/]")
+        table.add_row("Local URL", f"[underline cyan]{info.get('url')}[/]")
         table.add_row("Port", str(info.get("port")))
-        table.add_row("Process PID", str(info.get("pid")))
-        table.add_row("Uptime", f"{uptime_s}s")
+        table.add_row("Process PID", f"[yellow]{info.get('pid')}[/]")
+        table.add_row("Uptime", uptime_display)
+        table.add_row("Data Directory", f"[dim]{STACKCHECK_DIR}[/]")
         console.print(table)
-        console.print("[dim]Tip: Run 'stackcheck stop' to shut down this server.[/]")
+        console.print("[dim]💡 Tip: Run '[bold magenta]stackcheck stop[/]' to shut down this server.[/]")
     else:
         console.print(Panel(
-            "[bold yellow]StackCheck server is currently STOPPED.[/]\n\n"
-            "Run [bold cyan]stackcheck[/] or [bold cyan]stackcheck web[/] to launch the interactive dashboard.",
+            "[bold yellow]○ StackCheck server is currently STOPPED.[/]\n\n"
+            "Run [bold cyan]stackcheck[/] (foreground) or [bold cyan]stackcheck -d[/] (background daemon)\n"
+            "to launch the interactive dashboard.",
             title="StackCheck Server Status",
-            border_style="yellow"
+            border_style="yellow",
+            padding=(1, 2)
         ))
 
 
@@ -180,22 +191,27 @@ def search(keywords, location, workplace, experience, limit, project, export, us
     )
 
     console.print(Panel(
-        f"[bold cyan]StackCheck Data Pipeline[/]\n"
-        f"Project: [magenta]{project}[/] | Query: [yellow]{keywords}[/] | Location: [magenta]{location or 'Global'}[/] | "
-        f"Workplace: [green]{workplace}[/] | Exp: [blue]{experience}[/] | Limit: [white]{limit}[/]",
-        border_style="cyan"
+        f"[bold cyan]StackCheck Data Pipeline[/]\n\n"
+        f"  🎯 Query:     [bold yellow]{keywords}[/] (Limit: {limit})\n"
+        f"  📍 Location:  [magenta]{location or 'Global'}[/]\n"
+        f"  🏢 Workplace: [green]{workplace}[/] | Exp: [blue]{experience}[/]\n"
+        f"  📁 Project:   [cyan]{project}[/]",
+        title="[bold cyan]Search Pipeline[/bold cyan]",
+        border_style="cyan",
+        padding=(1, 2)
     ))
 
     client = HiringCafeClient(use_llm_if_available=use_llm)
 
     with Progress(
         SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
+        TextColumn("[bold cyan]{task.description}"),
+        BarColumn(bar_width=32),
         TimeRemainingColumn(),
-        console=console
+        console=console,
+        transient=True
     ) as progress:
-        task = progress.add_task("[cyan]Ingesting & cleaning job postings...", total=limit)
+        task = progress.add_task("Ingesting and cleaning job postings...", total=limit)
 
         def cb(curr, total, msg):
             progress.update(task, completed=curr, total=total, description=f"[dim]{msg}[/]")
@@ -203,8 +219,10 @@ def search(keywords, location, workplace, experience, limit, project, export, us
         jobs = client.search_jobs(query, progress_callback=cb)
 
     if not jobs:
-        console.print("[bold red]No matching job postings found.[/]")
+        console.print("[bold red]✘ No matching job postings found.[/]")
         return
+
+    console.print(f"[bold green]✔[/bold green] Ingested and parsed [bold white]{len(jobs)}[/bold white] postings for [bold yellow]'{keywords}'[/].")
 
     # Save to SQLite repository scoped to project
     run_id = repo.save_search_run(query, len(jobs), project_id=project)
@@ -214,12 +232,16 @@ def search(keywords, location, workplace, experience, limit, project, export, us
     stats = MetricsEngine.aggregate(jobs, query_keywords=keywords)
 
     # 1. Top Skills Table
-    table = Table(title=f"🔥 Top Demanded Skills for '{keywords}' ({len(jobs)} jobs analyzed) [Project: {project}]", border_style="cyan")
+    table = Table(
+        title=f"🔥 Top Demanded Skills for '{keywords}' ({len(jobs)} jobs) [Project: {project}]",
+        border_style="cyan",
+        header_style="bold cyan"
+    )
     table.add_column("Rank", justify="right", style="dim")
     table.add_column("Technology", style="bold white")
     table.add_column("Category", style="cyan")
     table.add_column("Demand % (Count)", justify="right", style="green")
-    table.add_column("Priority Weighted Score", justify="right", style="yellow")
+    table.add_column("Priority Score", justify="right", style="yellow")
 
     for idx, item in enumerate(stats.top_skills_overall[:15], 1):
         table.add_row(
@@ -233,7 +255,7 @@ def search(keywords, location, workplace, experience, limit, project, export, us
 
     # 2. Co-occurrence Synergies Table
     if stats.co_occurrences:
-        co_table = Table(title="🔗 Top Tech Stack Pairings (Co-Occurrences)", border_style="yellow")
+        co_table = Table(title="🔗 Top Tech Stack Pairings (Co-Occurrences)", border_style="yellow", header_style="bold yellow")
         co_table.add_column("Primary Tech", style="bold white")
         co_table.add_column("Paired Tech", style="bold white")
         co_table.add_column("Shared Jobs", justify="right", style="cyan")
@@ -246,13 +268,13 @@ def search(keywords, location, workplace, experience, limit, project, export, us
     # 3. Export Handling
     if export == "json":
         p = ReportExporter.export_json(stats, jobs)
-        console.print(f"[bold green]✔ Saved JSON report to:[/] [cyan]{p}[/]")
+        console.print(f"[bold green]✔[/bold green] Saved JSON report to: [cyan]{p}[/]")
     elif export == "csv":
         p = ReportExporter.export_csv(jobs)
-        console.print(f"[bold green]✔ Saved CSV jobs to:[/] [cyan]{p}[/]")
+        console.print(f"[bold green]✔[/bold green] Saved CSV jobs to: [cyan]{p}[/]")
     elif export == "md":
         p = ReportExporter.export_markdown(stats)
-        console.print(f"[bold green]✔ Saved Markdown summary to:[/] [cyan]{p}[/]")
+        console.print(f"[bold green]✔[/bold green] Saved Markdown summary to: [cyan]{p}[/]")
 
 
 @main.command()

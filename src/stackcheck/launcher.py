@@ -102,11 +102,30 @@ def cleanup_instance_files():
         pass
 
 
+from rich.console import Console
+from rich.panel import Panel
+
+console = Console()
+
+
+def locate_target_script() -> Optional[str]:
+    """Find the target Streamlit entrypoint app.py."""
+    candidate_paths = [
+        BASE_DIR / "src" / "stackcheck" / "web" / "app.py",
+        BASE_DIR / "stackcheck" / "web" / "app.py",
+        Path(__file__).resolve().parent / "web" / "app.py",
+        Path(os.getcwd()) / "app.py"
+    ]
+    for p in candidate_paths:
+        if p.exists():
+            return str(p)
+    return None
+
+
 def stop_running_instance() -> bool:
     """Stop any active StackCheck server instance and release the port."""
     info = get_running_instance()
     if not info:
-        # Also check fallback if pid file was missing but port 8501 is occupied
         cleanup_instance_files()
         return False
 
@@ -121,9 +140,10 @@ def stop_running_instance() -> bool:
                 if not is_port_listening(port):
                     break
             else:
-                # Force kill if still hung
+                # Force kill if still hung (use SIGKILL on Unix, SIGTERM fallback on Windows)
+                sig_kill = getattr(signal, "SIGKILL", getattr(signal, "SIGTERM", 15))
                 try:
-                    os.kill(pid, signal.SIGKILL)
+                    os.kill(pid, sig_kill)
                 except OSError:
                     pass
         except OSError:
@@ -145,6 +165,33 @@ def find_free_port(start_port: int = 8501, max_attempts: int = 15) -> int:
     return start_port
 
 
+def safe_open_browser(url: str):
+    """Open browser without leaking child process stderr/stdout to terminal."""
+    # Don't attempt to open browser if no GUI display is detected on Linux
+    if sys.platform.startswith("linux") and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+        return
+
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        old_stdout = os.dup(1)
+        old_stderr = os.dup(2)
+        try:
+            os.dup2(devnull, 1)
+            os.dup2(devnull, 2)
+            webbrowser.open(url)
+        finally:
+            os.dup2(old_stdout, 1)
+            os.dup2(old_stderr, 2)
+            os.close(old_stdout)
+            os.close(old_stderr)
+            os.close(devnull)
+    except Exception:
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+
 def wait_for_server_and_open_browser(url: str, port: int, timeout: float = 15.0):
     """
     Poll until server is verifiably accepting TCP connections, then open browser.
@@ -152,62 +199,125 @@ def wait_for_server_and_open_browser(url: str, port: int, timeout: float = 15.0)
     """
     def _worker():
         start_t = time.time()
-        ready = False
         while time.time() - start_t < timeout:
             if is_port_listening(port):
-                ready = True
                 break
             time.sleep(0.2)
 
         # Brief pause to let Streamlit HTTP routes settle
         time.sleep(0.4)
-        try:
-            webbrowser.open(url)
-        except Exception:
-            print(f"  ℹ️ Could not open browser automatically. Please open: {url}")
+        safe_open_browser(url)
 
     t = threading.Thread(target=_worker, daemon=True)
     t.start()
 
 
-def launch():
+def _launch_detached():
+    """Launch StackCheck in a detached background daemon process."""
+    import subprocess
+    STACKCHECK_DIR.mkdir(parents=True, exist_ok=True)
+    log_file_path = STACKCHECK_DIR / "stackcheck.log"
+
+    if getattr(sys, "frozen", False):
+        cmd = [sys.executable, "web"]
+    else:
+        cmd = [sys.executable, "-m", "stackcheck.cli", "web"]
+
+    log_file = open(log_file_path, "a", encoding="utf-8")
+
+    kwargs: Dict[str, Any] = {
+        "stdout": log_file,
+        "stderr": subprocess.STDOUT,
+        "stdin": subprocess.DEVNULL,
+        "close_fds": True,
+    }
+
+    if sys.platform == "win32":
+        creationflags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        kwargs["creationflags"] = creationflags
+    else:
+        kwargs["start_new_session"] = True
+
+    try:
+        proc = subprocess.Popen(cmd, **kwargs)
+    except Exception as e:
+        console.print(f"[bold red]✘ Failed to spawn background process:[/] {e}")
+        return
+
+    with console.status("[bold cyan]Starting StackCheck background service...", spinner="dots"):
+        start_time = time.time()
+        running_info = None
+        while time.time() - start_time < 15.0:
+            if proc.poll() is not None:
+                break
+            running_info = get_running_instance()
+            if running_info:
+                break
+            time.sleep(0.3)
+
+    if running_info:
+        url = running_info.get("url")
+        pid = running_info.get("pid")
+        console.print("[bold green]✔[/bold green] StackCheck background service started successfully.")
+        console.print(Panel(
+            f"[bold green]● StackCheck Background Service Active[/bold green]\n\n"
+            f"  🌐 [bold white]Dashboard URL:[/]  [bold underline cyan]{url}[/]\n"
+            f"  🆔 [bold white]Process PID:[/]    [bold yellow]{pid}[/]\n"
+            f"  📝 [bold white]Logs:[/]           [dim]{log_file_path}[/]\n\n"
+            f"  [dim]Commands:[/] [bold cyan]stackcheck status[/] [dim]•[/] [bold magenta]stackcheck stop[/]",
+            border_style="green",
+            padding=(1, 2)
+        ))
+        safe_open_browser(url)
+    else:
+        console.print("[bold red]✘ Failed to verify StackCheck background service startup.[/]")
+        if log_file_path.exists():
+            try:
+                with open(log_file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    lines = f.readlines()[-15:]
+                    if lines:
+                        console.print(Panel("".join(lines), title="[bold red]Startup Log Snippet[/]", border_style="red"))
+            except Exception:
+                pass
+        sys.exit(1)
+
+
+def launch(detach: bool = False):
     """Main launcher entrypoint."""
-    from streamlit.web import bootstrap
+    from stackcheck import __version__
 
     # 1. Single-instance check: If already running, focus browser instead of spawning duplicate
     running = get_running_instance()
     if running:
         existing_url = running.get("url", f"http://localhost:{running.get('port', 8501)}")
-        print("=" * 60)
-        print("  ℹ️ StackCheck is already running!")
-        print(f"  🌐 URL: {existing_url} (PID: {running.get('pid')})")
-        print("  🚀 Opening existing dashboard in your browser...")
-        print("=" * 60)
-        webbrowser.open(existing_url)
+        existing_pid = running.get("pid")
+        console.print(Panel(
+            f"[bold green]● StackCheck is already running![/bold green]\n\n"
+            f"  🌐 [bold white]Dashboard URL:[/]  [bold underline cyan]{existing_url}[/]\n"
+            f"  🆔 [bold white]Process PID:[/]    [bold yellow]{existing_pid}[/]\n\n"
+            f"  🚀 [italic]Opening existing dashboard in your browser...[/]\n"
+            f"  [dim]Tip: Run[/] [bold magenta]stackcheck stop[/] [dim]to terminate the server.[/]",
+            border_style="green",
+            padding=(1, 2)
+        ))
+        safe_open_browser(existing_url)
         return
 
-    # 2. Locate target app.py
-    candidate_paths = [
-        BASE_DIR / "src" / "stackcheck" / "web" / "app.py",
-        BASE_DIR / "stackcheck" / "web" / "app.py",
-        Path(__file__).resolve().parent / "web" / "app.py",
-        Path(os.getcwd()) / "app.py"
-    ]
+    # 2. Detached mode requested
+    if detach:
+        _launch_detached()
+        return
 
-    target_script = None
-    for p in candidate_paths:
-        if p.exists():
-            target_script = str(p)
-            break
-
+    # 3. Locate target app.py
+    target_script = locate_target_script()
     if not target_script:
-        print("❌ Error: Could not locate StackCheck app.py")
+        console.print("[bold red]✘ Error: Could not locate StackCheck app.py[/]")
         sys.exit(1)
 
     port = find_free_port(8501)
     app_url = f"http://localhost:{port}"
 
-    # 3. Record PID and port info
+    # 4. Record PID and port info
     STACKCHECK_DIR.mkdir(parents=True, exist_ok=True)
     my_pid = os.getpid()
     with open(PID_FILE, "w") as f:
@@ -223,28 +333,34 @@ def launch():
 
     atexit.register(cleanup_instance_files)
 
-    print("=" * 60)
-    print("  🚀 Starting StackCheck Desktop Intelligence Engine...")
-    print(f"  🌐 Local Dashboard: {app_url}")
-    print(f"  🆔 Process PID:     {my_pid}")
-    print("  💡 Tip: Run 'stackcheck stop' to stop this server anytime.")
-    print("=" * 60)
+    banner_text = (
+        f"[bold cyan]StackCheck Desktop Intelligence Engine[/] [bold green]v{__version__}[/]\n"
+        f"[dim italic]Interactive Job Market Analytics & Skill Intelligence[/]\n\n"
+        f"  🌐 [bold white]Local Dashboard:[/]  [bold underline cyan]{app_url}[/]\n"
+        f"  🆔 [bold white]Process PID:[/]      [bold yellow]{my_pid}[/]\n"
+        f"  📂 [bold white]Data Workspace:[/]   [dim]{STACKCHECK_DIR}[/]\n\n"
+        f"  [dim]💡 Tip: Press[/] [bold]Ctrl+C[/] [dim]or run[/] [bold magenta]stackcheck stop[/] [dim]to stop this server anytime.[/]"
+    )
+    console.print(Panel(
+        banner_text,
+        title="[bold green]● Server Active[/bold green]",
+        border_style="cyan",
+        padding=(1, 2)
+    ))
 
-    # 4. Wait for server readiness probe before opening browser
+    # Wait for server readiness probe before opening browser
     wait_for_server_and_open_browser(app_url, port=port, timeout=12.0)
 
-    from streamlit import config
+    # Silence noisy debug and polling loggers
+    import logging
+    for logger_name in ["streamlit", "tornado", "urllib3", "watchdog"]:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
 
-    # Crucial for PyInstaller/frozen standalone app and CLI distribution:
-    # 1. In PyInstaller/frozen runtime, Streamlit detects that "site-packages" is missing
-    #    from __file__ and defaults global.developmentMode to True.
-    #    When global.developmentMode is True, Streamlit DOES NOT MOUNT the static asset
-    #    routes (index.html, JS, CSS) and points browser to Vite dev port 3000, causing
-    #    the browser to open to a "404 Not Found" page.
-    # 2. bootstrap.run() does NOT automatically call bootstrap.load_config_options(flag_options),
-    #    so we must explicitly set config options and call load_config_options to ensure
-    #    server.port, global.developmentMode=False, and browser settings take effect immediately.
+    from streamlit import config
+    from streamlit.web import bootstrap
+
     config.set_option("global.developmentMode", False)
+    config.set_option("logger.level", "warning")
     config.set_option("server.port", port)
     config.set_option("server.address", "127.0.0.1")
     config.set_option("server.headless", True)
@@ -261,7 +377,8 @@ def launch():
         "browser_serverAddress": "localhost",
         "browser_gatherUsageStats": False,
         "client_toolbarMode": "viewer",
-        "global_developmentMode": False
+        "global_developmentMode": False,
+        "logger_level": "warning"
     }
 
     bootstrap.load_config_options(flag_options)

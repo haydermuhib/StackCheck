@@ -98,6 +98,7 @@ def build(onefile: bool = True):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build StackCheck standalone executable")
+    parser.add_argument("--onefile", action="store_true", default=True, help="Build as a single file executable (default)")
     parser.add_argument("--onedir", action="store_true", help="Build as a folder bundle rather than a single file")
     args = parser.parse_args()
     build(onefile=not args.onedir)
