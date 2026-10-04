@@ -19,6 +19,7 @@ from stackcheck.models import SearchQuery, WorkplaceType, ExperienceLevel, Regio
 from stackcheck.client.hiringcafe import HiringCafeClient
 from stackcheck.client.normalizer import SUGGESTED_ROLES, SUGGESTED_LOCATIONS, JobNormalizer
 from stackcheck.analyzer.metrics import MetricsEngine
+from stackcheck.analyzer.currency import currency_manager
 from stackcheck.storage.repository import JobRepository
 from stackcheck.storage.exporters import ReportExporter
 from stackcheck.web.charts import (
@@ -239,7 +240,7 @@ def main():
                             st.session_state.flash_msg = ("success", f"✔ Scraped {len(fresh_jobs)} postings: {res['new_count']} new added ({res['updated_count']} duplicates updated).")
                             st.rerun()
                         else:
-                            st.warning("No new postings found on HiringCafe for this query.")
+                            st.warning("No new postings found for this query.")
 
         # Project management expander
         with st.expander("➕ Create or Manage Projects"):
@@ -326,13 +327,13 @@ def main():
 
         effective_limit = 0 if fetch_all else limit_slider
         if fetch_all:
-            st.caption("🔄 *Deep Crawl active: Scraper will collect every matching posting until HiringCafe results are exhausted.*")
+            st.caption("🔄 *Deep Crawl active: Scraper will collect every matching posting until live market results are exhausted.*")
 
         # Trigger Pipeline
         run_btn = st.button("🚀 Scrape & Add to Project", type="primary", width="stretch")
 
         if run_btn:
-            with st.spinner(f"Ingesting live postings from HiringCafe into '{active_project.name}'..."):
+            with st.spinner(f"Ingesting live market postings into '{active_project.name}'..."):
                 prog_bar = st.progress(10)
                 status_text = st.empty()
 
@@ -563,6 +564,50 @@ def main():
             else:
                 st.info("Insufficient salary and location samples in the current dataset to render country compensation scatter (minimum 2 samples required).")
 
+            with st.expander("💱 Currency Normalization & Live Exchange Rates (View & Customise)", expanded=False):
+                st.caption(
+                    "All international salaries are automatically converted to USD for unified global benchmarks. "
+                    f"Current source: **{currency_manager.source}** (Last updated: {currency_manager.last_updated or 'Today'})."
+                )
+                c_btn1, c_btn2, _ = st.columns([1.5, 1.5, 3])
+                with c_btn1:
+                    if st.button("🔄 Sync Live Exchange Rates", key="btn_sync_live_rates"):
+                        with st.spinner("Fetching latest market rates from Open Exchange API..."):
+                            success = currency_manager.fetch_live_rates()
+                            if success:
+                                st.success("Live rates updated successfully!")
+                                st.rerun()
+                            else:
+                                st.warning("Live sync unavailable (offline/network). Retaining existing rates.")
+                with c_btn2:
+                    if st.button("↺ Reset to Standard Defaults", key="btn_reset_rates"):
+                        currency_manager.reset_to_defaults()
+                        st.info("Reset to default baseline rates.")
+                        st.rerun()
+
+                # Quick editor for common currencies
+                common_currs = ["EUR", "GBP", "INR", "PHP", "CAD", "AUD", "CRC", "JPY", "PKR", "BRL", "MXN", "PLN", "SGD", "NZD", "CHF"]
+                st.markdown("**Customise Exchange Rates (1 Currency Unit = X USD):**")
+                rate_cols = st.columns(5)
+                changed = False
+                for i, c_code in enumerate(common_currs):
+                    curr_rate = currency_manager.rates.get(c_code, 1.0)
+                    with rate_cols[i % 5]:
+                        new_r = st.number_input(
+                            f"1 {c_code} ($)",
+                            value=float(curr_rate),
+                            format="%.6f",
+                            step=0.0001,
+                            key=f"rate_input_{c_code}"
+                        )
+                        if abs(new_r - curr_rate) > 1e-7:
+                            currency_manager.update_custom_rate(c_code, new_r)
+                            changed = True
+
+                if changed:
+                    st.success("Custom exchange rates saved! Updating analysis...")
+                    st.rerun()
+
             st.markdown("---")
 
             # 2. Tech Stack Synergies & Co-Occurrence
@@ -783,9 +828,14 @@ def main():
                         help="Direct company application or job posting portal",
                         max_chars=120,
                         display_text="🔗 Apply Now"
+                    ),
+                    "Salary (USD/yr)": st.column_config.NumberColumn(
+                        "Salary (USD/yr)",
+                        help="Normalized annual compensation converted to USD",
+                        format="$%d"
                     )
                 }
-                display_cols = ["Job Title", "Company", "Location", "Country", "Workplace", "Experience", "Salary", "Extracted Skills", "Apply URL"]
+                display_cols = ["Job Title", "Company", "Location", "Country", "Workplace", "Experience", "Salary", "Salary (USD/yr)", "Extracted Skills", "Apply URL"]
                 valid_cols = [c for c in display_cols if c in jobs_df.columns]
                 st.dataframe(
                     jobs_df[valid_cols],
@@ -817,10 +867,18 @@ def main():
                     index=0
                 )
 
-            # Apply sorting
+            # Apply sorting using converted USD values
             cards_to_show = list(filtered_jobs)
             if sort_order == "Highest Salary First":
-                cards_to_show.sort(key=lambda j: (j.salary.max_amount or j.salary.min_amount or 0) if j.salary else 0, reverse=True)
+                cards_to_show.sort(
+                    key=lambda j: currency_manager.convert_to_usd(
+                        (j.salary.max_amount or j.salary.min_amount or 0),
+                        currency=j.salary.currency,
+                        country=j.country or j.location,
+                        period=j.salary.period
+                    ) if j.salary else 0,
+                    reverse=True
+                )
             elif sort_order == "Most Tech Skills Demanded":
                 cards_to_show.sort(key=lambda j: len(j.extracted_skills), reverse=True)
             elif sort_order == "Company Name (A-Z)":
@@ -834,13 +892,28 @@ def main():
             st.caption(f"Displaying **{len(visible_cards)}** of **{len(cards_to_show)}** filtered postings:")
 
             for idx, job in enumerate(visible_cards):
-                sal_tag = f" • 💵 {job.salary.formatted}" if job.salary and job.salary.formatted != "Not specified" else ""
+                if job.salary and job.salary.formatted != "Not specified":
+                    usd_equiv = currency_manager.convert_to_usd(
+                        (job.salary.max_amount or job.salary.min_amount or 0),
+                        currency=job.salary.currency,
+                        country=job.country or job.location,
+                        period=job.salary.period
+                    )
+                    if (job.salary.currency or "USD").upper() != "USD" and usd_equiv > 0:
+                        sal_display = f"{job.salary.formatted} (≈ ${usd_equiv:,.0f} USD/yr)"
+                    else:
+                        sal_display = job.salary.formatted
+                    sal_tag = f" • 💵 {sal_display}"
+                else:
+                    sal_display = "Not Listed"
+                    sal_tag = ""
+
                 skills_count = len(job.extracted_skills)
                 with st.expander(f"📍 {job.title} — {job.company} ({job.location}){sal_tag} [{skills_count} skills]"):
                     col_d1, col_d2 = st.columns([1, 1])
                     with col_d1:
                         st.write(f"**Workplace:** {job.workplace_type.value.capitalize()} | **Experience:** {job.experience_level.value.capitalize()}")
-                        st.write(f"**Salary:** {job.salary.formatted if job.salary else 'Not Listed'}")
+                        st.write(f"**Salary:** {sal_display}")
                         target_link = job.link or job.apply_url or job.url
                         if target_link and target_link.startswith("http"):
                             st.markdown(f"**Direct Application:** [🔗 Open Official Careers / ATS Portal]({target_link})")

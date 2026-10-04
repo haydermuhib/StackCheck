@@ -12,6 +12,7 @@ from typing import List, Dict, Any, Tuple
 from collections import Counter, defaultdict
 from itertools import combinations
 from stackcheck.models import JobPost, AggregatedStats, SkillCoOccurrence, GeoTechBreakdown, Region, WorkplaceType, TechCategory
+from stackcheck.analyzer.currency import currency_manager
 
 
 class MetricsEngine:
@@ -78,10 +79,14 @@ class MetricsEngine:
                     avg_sal = job.salary.min_amount or job.salary.max_amount or 0
                     if job.salary.min_amount and job.salary.max_amount:
                         avg_sal = (job.salary.min_amount + job.salary.max_amount) / 2.0
-                    # Standardize hourly to yearly if needed
-                    if job.salary.period == "hourly" and avg_sal < 500:
-                        avg_sal = avg_sal * 2080
-                    salary_tech_map[canon].append(avg_sal)
+                    usd_val = currency_manager.convert_to_usd(
+                        amount=avg_sal,
+                        currency=job.salary.currency,
+                        country=job.country or job.location,
+                        period=job.salary.period
+                    )
+                    if 5000 <= usd_val <= 750000:
+                        salary_tech_map[canon].append(usd_val)
 
             # Calculate pairwise co-occurrences for this job
             sorted_skills = sorted(list(job_skills_seen))
@@ -200,16 +205,19 @@ class MetricsEngine:
                     company_skills_map[comp_clean][s] += 1
 
             if job.salary and (job.salary.min_amount or job.salary.max_amount):
-                val = job.salary.min_amount or job.salary.max_amount or 0
+                raw_val = job.salary.min_amount or job.salary.max_amount or 0
                 if job.salary.min_amount and job.salary.max_amount:
-                    val = (job.salary.min_amount + job.salary.max_amount) / 2.0
-                if job.salary.period == "hourly" and val < 500:
-                    val = val * 2080
-                elif job.salary.period == "monthly" and val < 30000:
-                    val = val * 12
+                    raw_val = (job.salary.min_amount + job.salary.max_amount) / 2.0
+                
+                usd_val = currency_manager.convert_to_usd(
+                    amount=raw_val,
+                    currency=job.salary.currency,
+                    country=job.country or job.location,
+                    period=job.salary.period
+                )
 
-                if val > 5000:  # Reasonable annual salary floor
-                    norm_val = round(val, 0)
+                if 5000 <= usd_val <= 750000:  # Sensible global annual salary bounds in USD
+                    norm_val = round(usd_val, 0)
                     salaries_all.append(norm_val)
                     salaries_by_exp[job.experience_level.value].append(norm_val)
                     salaries_by_workplace[job.workplace_type.value].append(norm_val)
@@ -308,7 +316,23 @@ class MetricsEngine:
         rows = []
         for j in jobs:
             skills_str = ", ".join([s.canonical_name for s in j.extracted_skills])
-            sal_str = j.salary.formatted if j.salary else "Not Disclosed"
+            sal_str = "Not Disclosed"
+            sal_usd = None
+            if j.salary:
+                raw_amt = j.salary.max_amount or j.salary.min_amount or 0
+                usd_amt = currency_manager.convert_to_usd(
+                    raw_amt,
+                    currency=j.salary.currency,
+                    country=j.country or j.location,
+                    period=j.salary.period
+                )
+                if usd_amt > 0:
+                    sal_usd = round(usd_amt, 0)
+                if (j.salary.currency or "USD").upper() != "USD" and usd_amt > 0:
+                    sal_str = f"{j.salary.formatted} (≈ ${usd_amt:,.0f} USD/yr)"
+                else:
+                    sal_str = j.salary.formatted
+
             rows.append({
                 "Job Title": j.title,
                 "Company": j.company,
@@ -318,6 +342,7 @@ class MetricsEngine:
                 "Workplace": j.workplace_type.value.capitalize(),
                 "Experience": j.experience_level.value.capitalize(),
                 "Salary": sal_str,
+                "Salary (USD/yr)": sal_usd,
                 "Skills Count": len(j.extracted_skills),
                 "Extracted Skills": skills_str,
                 "Apply URL": j.link or j.apply_url or j.url or ""

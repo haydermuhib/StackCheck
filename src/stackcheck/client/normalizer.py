@@ -153,12 +153,12 @@ SUGGESTED_ROLES = [
     "Analytics Engineer",
     "Business Intelligence Developer",
     "Product Analyst",
-    "Database Administrator (DBA)",
+    "Database Administrator",
 
     # AI & Machine Learning
     "Machine Learning Engineer",
     "AI Engineer",
-    "Generative AI / LLM Engineer",
+    "LLM Engineer",
     "Computer Vision Engineer",
     "NLP Engineer",
     "Research Scientist",
@@ -169,14 +169,15 @@ SUGGESTED_ROLES = [
     "Frontend Developer",
     "Software Engineer",
     "Solutions Architect",
-    "Mobile Developer (iOS / Android)",
+    "Mobile Developer",
     "iOS Developer",
     "Android Developer",
+    "Game Developer",
     "Embedded Systems Engineer",
 
     # Cloud, DevOps & Infrastructure
     "DevOps Engineer",
-    "Site Reliability Engineer (SRE)",
+    "Site Reliability Engineer",
     "Cloud Architect",
     "Cloud Engineer",
     "Platform Engineer",

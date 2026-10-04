@@ -287,7 +287,11 @@ def plot_salary_by_country_scatter(country_salary_data: List[dict], color_by: st
     if df.empty or "country" not in df.columns or "salary_k" not in df.columns:
         return None
 
-    # Filter to countries with at least 1 record
+    # Filter to countries with at least 1 record and guard against > $600k data anomalies
+    df = df[(df["salary_k"] > 5.0) & (df["salary_k"] <= 600.0)].copy()
+    if df.empty:
+        return None
+
     country_counts = df["country"].value_counts()
     top_countries = country_counts.head(12).index.tolist()
     df = df[df["country"].isin(top_countries)].copy()

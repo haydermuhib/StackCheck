@@ -57,12 +57,19 @@ class SalaryInfo(BaseModel):
 
     @property
     def formatted(self) -> str:
+        symbols = {
+            "USD": "$", "EUR": "€", "GBP": "£", "INR": "₹", "PHP": "₱",
+            "CAD": "CA$", "AUD": "A$", "JPY": "¥", "BRL": "R$", "PKR": "Rs ",
+            "CRC": "₡", "MXN": "Mex$", "PLN": "zł", "SGD": "S$", "NZD": "NZ$",
+            "CHF": "CHF "
+        }
+        sym = symbols.get((self.currency or "USD").upper(), f"{self.currency} ")
         if self.min_amount and self.max_amount:
-            return f"${self.min_amount:,.0f} - ${self.max_amount:,.0f} / {self.period}"
+            return f"{sym}{self.min_amount:,.0f} - {sym}{self.max_amount:,.0f} / {self.period}"
         elif self.min_amount:
-            return f"From ${self.min_amount:,.0f} / {self.period}"
+            return f"From {sym}{self.min_amount:,.0f} / {self.period}"
         elif self.max_amount:
-            return f"Up to ${self.max_amount:,.0f} / {self.period}"
+            return f"Up to {sym}{self.max_amount:,.0f} / {self.period}"
         return "Not specified"
 
 
@@ -123,7 +130,7 @@ class JobPost(BaseModel):
 
     @property
     def link(self) -> str:
-        return self.apply_url or self.url or "https://hiringcafe.com"
+        return self.apply_url or self.url or ""
 
 
 class SearchQuery(BaseModel):

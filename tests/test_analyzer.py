@@ -184,3 +184,42 @@ def test_job_market_extended_metrics():
     assert "remote" in stats.workplace_salary_stats
     assert stats.workplace_salary_stats["remote"]["median"] == 175000
 
+
+def test_currency_manager_conversions():
+    from pathlib import Path
+    from stackcheck.analyzer.currency import CurrencyManager
+    from stackcheck.models import SalaryInfo
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(suffix=".json") as tf:
+        cm = CurrencyManager(cache_file=Path(tf.name))
+        
+        # 1. Standard USD yearly
+        assert cm.convert_to_usd(150000, "USD", period="yearly") == 150000.0
+
+        # 2. Hourly USD conversion
+        assert cm.convert_to_usd(50, "USD", period="hourly") == 50 * 2080
+
+        # 3. Monthly USD conversion
+        assert cm.convert_to_usd(10000, "USD", period="monthly") == 120000.0
+
+        # 4. Foreign currencies
+        inr_usd = cm.convert_to_usd(3000000, "INR", period="yearly")
+        assert 30000 <= inr_usd <= 40000  # ~35.7k USD
+
+        php_usd = cm.convert_to_usd(1440000, "PHP", period="yearly")
+        assert 20000 <= php_usd <= 30000  # ~25.2k USD
+
+        # 5. Smart inference when currency was defaulted to USD but amount in millions in foreign country
+        crc_usd = cm.convert_to_usd(36000000, "USD", country="Costa Rica", period="yearly")
+        assert 60000 <= crc_usd <= 80000  # ~70.2k USD instead of 36 million!
+
+        # 6. SalaryInfo formatting
+        sal_php = SalaryInfo(min_amount=120000, max_amount=120000, currency="PHP", period="monthly")
+        assert "₱" in sal_php.formatted
+        assert "/ monthly" in sal_php.formatted
+
+        sal_usd = SalaryInfo(min_amount=150000, max_amount=180000, currency="USD", period="yearly")
+        assert "$" in sal_usd.formatted
+
+

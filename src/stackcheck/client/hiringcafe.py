@@ -85,7 +85,7 @@ class HiringCafeClient:
 
         if not raw_items:
             if progress_callback:
-                progress_callback(0, 1, f"No jobs found on HiringCafe matching '{query.keywords}'.")
+                progress_callback(0, 1, f"No jobs found matching '{query.keywords}'.")
             return []
 
         seen_fingerprints = set()
@@ -172,9 +172,33 @@ class HiringCafeClient:
             # Step 6: Salary Extraction
             min_sal = v5.get("yearly_min_compensation") or v5.get("hourly_min_compensation")
             max_sal = v5.get("yearly_max_compensation") or v5.get("hourly_max_compensation")
-            curr = v5.get("listed_compensation_currency") or "USD"
-            period = v5.get("listed_compensation_frequency") or "yearly"
+            curr = (v5.get("listed_compensation_currency") or "USD").upper().strip()
             
+            # Correct period alignment: if value is yearly, period must be yearly (preventing 1.4M / monthly bugs)
+            if v5.get("yearly_min_compensation") or v5.get("yearly_max_compensation"):
+                period = "yearly"
+            elif v5.get("hourly_min_compensation") or v5.get("hourly_max_compensation"):
+                period = "hourly"
+            else:
+                period = (v5.get("listed_compensation_frequency") or "yearly").lower()
+
+            # Smart local currency inference when API defaults to USD for foreign local compensation
+            if curr == "USD" and location_raw:
+                loc_lower = location_raw.lower()
+                for c_name, c_code in [
+                    ("costa rica", "CRC"),
+                    ("philippines", "PHP"),
+                    ("india", "INR"),
+                    ("pakistan", "PKR"),
+                    ("japan", "JPY"),
+                    ("colombia", "COP"),
+                    ("brazil", "BRL"),
+                    ("vietnam", "VND")
+                ]:
+                    if c_name in loc_lower and ((min_sal and min_sal > 400000) or (max_sal and max_sal > 400000)):
+                        curr = c_code
+                        break
+
             salary = None
             if min_sal or max_sal:
                 salary = SalaryInfo(
@@ -237,7 +261,7 @@ class HiringCafeClient:
     def _fetch_live_jobs(self, query: SearchQuery, progress_callback=None) -> Tuple[List[Dict[str, Any]], Optional[str]]:
         """Fetch genuine live job postings from HiringCafe with targeted filters and multi-page pagination."""
         if progress_callback:
-            progress_callback(10, 100, "Connecting to HiringCafe live job index...")
+            progress_callback(10, 100, "Connecting to live market job index...")
 
         # Build structured search state for HiringCafe
         search_state: Dict[str, Any] = {}
@@ -330,17 +354,17 @@ class HiringCafeClient:
                             # Reached last page
                             break
                 elif resp.status_code == 403:
-                    last_error = "❌ HiringCafe blocked request with HTTP 403 (Cloudflare Bot Challenge)."
+                    last_error = "❌ Job search provider returned HTTP 403 (Bot Challenge)."
                 else:
-                    last_error = f"❌ HiringCafe returned HTTP {resp.status_code}."
+                    last_error = f"❌ Live service returned HTTP {resp.status_code}."
             except Exception as e:
                 err_str = str(e)
                 if "could not resolve host" in err_str.lower() or "connection" in err_str.lower() or "name resolution" in err_str.lower():
-                    last_error = f"❌ No Internet Connection: Unable to resolve or connect to hiringcafe.com ({err_str})"
+                    last_error = f"❌ No Internet Connection: Unable to connect to live job indexes ({err_str})"
                 elif "timeout" in err_str.lower():
-                    last_error = "❌ Request Timeout: HiringCafe server took too long to respond."
+                    last_error = "❌ Request Timeout: Live job index took too long to respond."
                 else:
-                    last_error = f"❌ HiringCafe Fetch Error: {err_str}"
+                    last_error = f"❌ Live Job Index Fetch Error: {err_str}"
 
         if all_hits:
             return all_hits, None
@@ -362,4 +386,4 @@ class HiringCafeClient:
 
         if last_error:
             return [], last_error
-        return [], f"No jobs found on HiringCafe matching '{query.keywords}'."
+        return [], f"No jobs found matching '{query.keywords}'."
