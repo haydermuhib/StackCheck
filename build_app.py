@@ -59,14 +59,11 @@ def build(onefile: bool = True):
         f"--add-data={SRC_DIR / 'stackcheck'}{sep}stackcheck",
         f"--add-data={static_dir}{sep}streamlit/static",
         f"--add-data={ASSETS_DIR}{sep}assets",
-        "--copy-metadata=streamlit",
-        "--copy-metadata=altair",
+        "--collect-all=streamlit",
+        "--collect-all=altair",
+        "--collect-all=curl_cffi",
         "--copy-metadata=rich",
         "--copy-metadata=click",
-        "--hidden-import=streamlit",
-        "--hidden-import=streamlit.web.bootstrap",
-        "--hidden-import=streamlit.runtime.scriptrunner.magic_expressions",
-        "--hidden-import=altair",
         "--hidden-import=pandas",
         "--hidden-import=matplotlib",
         "--hidden-import=requests",
@@ -74,7 +71,8 @@ def build(onefile: bool = True):
         "--hidden-import=packaging",
         "--hidden-import=sqlite3",
         "--hidden-import=stackcheck",
-        str(SRC_DIR / "stackcheck" / "launcher.py")
+        "--hidden-import=streamlit.runtime.scriptrunner.magic_funcs",
+        str(SRC_DIR / "stackcheck" / "cli.py")
     ]
 
     if icon_arg:

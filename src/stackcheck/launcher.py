@@ -22,7 +22,27 @@ if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
 else:
     BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-STACKCHECK_DIR = Path.home() / ".stackcheck"
+import tempfile
+
+
+def _resolve_stackcheck_dir() -> Path:
+    target = Path.home() / ".stackcheck"
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        test_file = target / ".write_test"
+        test_file.touch(exist_ok=True)
+        test_file.unlink(missing_ok=True)
+        return target
+    except (OSError, PermissionError):
+        fallback = Path(tempfile.gettempdir()) / ".stackcheck"
+        try:
+            fallback.mkdir(parents=True, exist_ok=True)
+            return fallback
+        except OSError:
+            return Path.cwd() / ".stackcheck"
+
+
+STACKCHECK_DIR = _resolve_stackcheck_dir()
 PID_FILE = STACKCHECK_DIR / "stackcheck.pid"
 INFO_FILE = STACKCHECK_DIR / "stackcheck.json"
 
@@ -210,14 +230,38 @@ def launch():
     # 4. Wait for server readiness probe before opening browser
     wait_for_server_and_open_browser(app_url, port=port, timeout=12.0)
 
+    from streamlit import config
+
+    # Crucial for PyInstaller/frozen standalone app and CLI distribution:
+    # 1. In PyInstaller/frozen runtime, Streamlit detects that "site-packages" is missing
+    #    from __file__ and defaults global.developmentMode to True.
+    #    When global.developmentMode is True, Streamlit DOES NOT MOUNT the static asset
+    #    routes (index.html, JS, CSS) and points browser to Vite dev port 3000, causing
+    #    the browser to open to a "404 Not Found" page.
+    # 2. bootstrap.run() does NOT automatically call bootstrap.load_config_options(flag_options),
+    #    so we must explicitly set config options and call load_config_options to ensure
+    #    server.port, global.developmentMode=False, and browser settings take effect immediately.
+    config.set_option("global.developmentMode", False)
+    config.set_option("server.port", port)
+    config.set_option("server.address", "127.0.0.1")
+    config.set_option("server.headless", True)
+    config.set_option("browser.serverPort", port)
+    config.set_option("browser.serverAddress", "localhost")
+    config.set_option("browser.gatherUsageStats", False)
+    config.set_option("client.toolbarMode", "viewer")
+
     flag_options = {
         "server_port": port,
         "server_headless": True,
         "server_address": "127.0.0.1",
+        "browser_serverPort": port,
+        "browser_serverAddress": "localhost",
         "browser_gatherUsageStats": False,
         "client_toolbarMode": "viewer",
         "global_developmentMode": False
     }
+
+    bootstrap.load_config_options(flag_options)
 
     try:
         bootstrap.run(
@@ -231,4 +275,5 @@ def launch():
 
 
 if __name__ == "__main__":
-    launch()
+    from stackcheck.cli import main
+    main()
