@@ -14,7 +14,7 @@ StackCheck/
 ├── README.md                   # Project documentation & usage guide
 ├── PRESENTATION.md             # Technical methodology & slide deck
 ├── ARCHITECTURE.md             # Complete system architecture specification
-├── tests/                      # Automated Unit Test Suite (27 passing tests)
+├── tests/                      # Automated Unit Test Suite (32 passing tests)
 │   ├── test_analyzer.py        # Tests for segmentation, weighting & metrics
 │   ├── test_client.py          # Tests for client parsing & location normalizer
 │   ├── test_storage.py         # Tests for SQLite repository, projects & isolation
@@ -29,6 +29,7 @@ StackCheck/
     │   ├── taxonomy.py         # 100+ technologies across 9 domain categories
     │   ├── rule_extractor.py   # Requirements (1.8x) vs Responsibilities (1.2x)
     │   ├── llm_extractor.py    # Optional Gemini / OpenAI enrichment
+    │   ├── currency.py         # 💱 Currency normalizer, daily exchange rate sync & custom rates
     │   └── metrics.py          # Co-occurrence, salary stats & Pandas DataFrames
     ├── storage/                # 💾 Storage & Export Layer
     │   ├── db.py               # SQLite schema (projects, search runs, jobs, skills)
@@ -136,6 +137,12 @@ flowchart TD
     - Salary percentiles (Min, Average, Max) segmented by technology.
     - Regional partitions (**USA**, **Europe**, **Pakistan**, **India**, **APAC**, **Latin America**, **Middle East**, **Global Remote**).
     - Converts structured models to **Pandas DataFrames** (`to_jobs_dataframe()`, `to_skills_dataframe()`).
+- **`currency.py` (`CurrencyManager`)**:
+  - **Live Exchange Rate Engine**: Fetches daily floating exchange rates against USD via the open Frankfurter/Open-Exchange API ecosystem with a 24-hour TTL cache.
+  - **Embedded Baseline Fallbacks**: Bundles rock-solid offline fallback rates for all major global and regional recruitment currencies (`INR`, `PKR`, `PHP`, `EUR`, `GBP`, `CAD`, `AUD`, `CRC`, `SGD`, etc.) to guarantee 100% offline availability.
+  - **Dual-Path Cache Persistence**: Caches daily rates in `~/.stackcheck/exchange_rates.json` with automatic fallback to `./.stackcheck/exchange_rates.json` if user directory permissions are restricted.
+  - **Smart Local Currency Inference**: Automatically detects when foreign market postings (e.g. Philippines ₱, Costa Rica ₡, India ₹) have salaries inadvertently mislabeled with "$" and dynamically converts them to canonical USD annual benchmarks.
+  - **Sanity Bounds & Statistical Filtering**: Enforces annual salary boundaries ($5,000 to $750,000 USD) to prevent multi-million outlier spikes from distorting analytics.
 
 ---
 
@@ -265,7 +272,7 @@ All execution methods (`uv run stackcheck`, local standalone `./dist/StackCheck`
 
 ## 6. 🧪 Test Suite & Verification
 
-The automated test suite contains **27 tests** across 6 modules validating data ingestion, parsing, weighting, SQLite operations, multi-project isolation, DataFrame conversions, Matplotlib figure rendering, CLI commands, and launcher lifecycle management:
+The automated test suite contains **32 tests** across 6 modules validating data ingestion, parsing, weighting, SQLite operations, multi-project isolation, DataFrame conversions, Matplotlib figure rendering, CLI commands, and launcher lifecycle management:
 
 ```bash
 # Run the complete test suite
@@ -277,13 +284,15 @@ tests/test_analyzer.py::test_segment_job_description PASSED
 tests/test_analyzer.py::test_rule_extractor_positional_weighting PASSED
 tests/test_analyzer.py::test_job_normalizer PASSED
 tests/test_analyzer.py::test_metrics_engine_aggregation PASSED
+tests/test_analyzer.py::test_job_market_extended_metrics PASSED
+tests/test_analyzer.py::test_currency_manager_conversions PASSED
 tests/test_cli.py::test_cli_help PASSED
 tests/test_cli.py::test_cli_version PASSED
 tests/test_cli.py::test_cli_web_detach_flag PASSED
 tests/test_cli.py::test_cli_status PASSED
-tests/test_cli.py::test_cli_search_empty PASSED
-tests/test_cli.py::test_cli_analyze_empty PASSED
-tests/test_cli.py::test_cli_projects_crud PASSED
+tests/test_cli.py::test_cli_stop PASSED
+tests/test_cli.py::test_cli_projects_list PASSED
+tests/test_cli.py::test_launcher_config_sets_production_mode PASSED
 tests/test_client.py::test_hiringcafe_client_structure PASSED
 tests/test_client.py::test_hiringcafe_job_parsing PASSED
 tests/test_client.py::test_location_normalization PASSED
@@ -297,11 +306,14 @@ tests/test_storage.py::test_repository_save_and_retrieve PASSED
 tests/test_storage.py::test_exporters PASSED
 tests/test_storage.py::test_project_isolation_and_crud PASSED
 tests/test_storage.py::test_duplicate_detection_and_apply_urls PASSED
-tests/test_storage.py::test_isolated_db_file_access PASSED
+tests/test_storage.py::test_default_data_dir_isolation PASSED
+tests/test_storage.py::test_project_query_memory_and_deduplication PASSED
+tests/test_storage.py::test_get_all_jobs_beyond_500_limit PASSED
 tests/test_web.py::test_dataframe_conversions PASSED
 tests/test_web.py::test_charts_generation PASSED
+tests/test_web.py::test_extended_job_market_charts PASSED
 
-============================== 27 passed in 2.35s ==============================
+============================== 32 passed in 2.63s ==============================
 ```
 
 ---

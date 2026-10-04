@@ -265,6 +265,41 @@
       color: var(--text-heading);
     }
 
+    /* Multi-OS Installer Switcher */
+    .os-toggle-group {
+      display: inline-flex;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-full);
+      padding: 4px;
+      margin-bottom: var(--space-4);
+      gap: 4px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .os-tab {
+      background: transparent;
+      border: none;
+      padding: 6px 18px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-display);
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .os-tab:hover {
+      color: var(--text-heading);
+    }
+
+    .os-tab.active {
+      background: var(--accent-cyan-dim);
+      color: var(--accent-cyan);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
     /* 1-Line CLI Box */
     .cli-bar {
       background: var(--bg-surface);
@@ -714,6 +749,18 @@
         <span class="meta-pill"><strong>Architecture:</strong> Portable Zero-Install (Ventoy style)</span>
       </div>
 
+      <!-- OS Switcher Pills -->
+      <div>
+        <div class="os-toggle-group">
+          <button class="os-tab active" id="tab-nix" onclick="switchOs('nix')">
+            🍎 macOS / 🐧 Linux (Bash)
+          </button>
+          <button class="os-tab" id="tab-win" onclick="switchOs('win')">
+            🪟 Windows (PowerShell)
+          </button>
+        </div>
+      </div>
+
       <!-- 1-Line Universal Install Snippet -->
       <div class="cli-bar">
         <div class="cli-prompt">
@@ -722,6 +769,9 @@
         </div>
         <button class="btn-copy" onclick="copyInstallCmd()" id="copy-btn">Copy Command</button>
       </div>
+      <p class="install-fallback-note" id="win-download-note" style="display: none; margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">
+        💡 Or download the standalone executable: <a href="https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe" style="color: var(--accent-cyan); text-decoration: underline;">StackCheck-windows-x64.exe</a>
+      </p>
     </header>
 
     <!-- Slide 0: Agenda -->
@@ -1046,6 +1096,18 @@ python build_app.py --onefile</pre>
   </div>
 
   <script>
+    const installCommands = {
+      nix: 'curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash',
+      win: 'irm https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe -OutFile StackCheck.exe; .\\StackCheck.exe'
+    };
+
+    function switchOs(os) {
+      document.getElementById('cmd-text').innerText = installCommands[os];
+      document.getElementById('tab-nix').classList.toggle('active', os === 'nix');
+      document.getElementById('tab-win').classList.toggle('active', os === 'win');
+      document.getElementById('win-download-note').style.display = (os === 'win') ? 'block' : 'none';
+    }
+
     function copyInstallCmd() {
       const text = document.getElementById('cmd-text').innerText;
       navigator.clipboard.writeText(text).then(() => {

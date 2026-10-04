@@ -19,11 +19,20 @@
 
 ## ⚡ 1-Line Universal Install
 
-Install the standalone portable binary on Linux and macOS with zero dependencies:
+Install the standalone portable binary with zero dependencies:
 
+### 🍎 macOS & 🐧 Linux (Terminal)
 ```bash
 curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash
 ```
+
+### 🪟 Windows (PowerShell)
+```powershell
+irm https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe -OutFile StackCheck.exe; .\StackCheck.exe
+```
+> **Tip for Windows:** You can also directly download and run [**StackCheck-windows-x64.exe**](https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe) from GitHub Releases with zero installation.
+
+---
 
 Once installed, launch the web dashboard instantly:
 ```bash
@@ -45,6 +54,7 @@ StackCheck is an automated job scraper, section-aware skill extractor, and inter
 | 🔍 **Live HiringCafe Ingestion** | Query by keywords, location (Pakistan, USA, UK, Germany, India, Remote, etc.), workplace mode (*Remote / Hybrid / Onsite*), experience level, and limit. |
 | 🧹 **Data Cleaning & Normalization** | Deterministic SHA-256 fingerprinting to eliminate duplicate postings across companies and canonical country resolution (*"USA", "PK", "Lahore", "Indai", "NZ"*). |
 | 🧠 **Section-Aware Priority Weighting** | Separates **"What we look for"** (Requirements) from **"Day-to-day"** (Responsibilities) with decaying positional multipliers ($1.8\times \to 1.0\times$). |
+| 💱 **Currency Normalization Engine** | Live Open Exchange rates sync with offline baseline rates (`INR`, `PHP`, `CRC`, `EUR`, `GBP`, `CAD`, etc.), outlier safeguards, and interactive custom rate overrides. |
 | 📊 **Statistical Visualizations** | Demanded skills frequency %, Seaborn co-occurrence heatmaps (`Python + SQL`, `Snowflake + dbt`), and min/avg/max compensation ranges. |
 | 💼 **Interactive Job Explorer** | Filterable table with multi-select filters for **Experience Level**, **Country**, and **Skills** (ANY / ALL match mode) with direct employer apply links. |
 | 📦 **Portable Standalone App** | Zero-install binary architecture (Ventoy style) with embedded Python runtime, local SQLite isolation, and in-place GitHub updater. |
