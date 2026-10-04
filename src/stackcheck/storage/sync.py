@@ -66,7 +66,7 @@ class CommunitySyncClient:
             pass
 
         # Return actual local database stats
-        all_jobs = self.repo.get_all_jobs(limit=500)
+        all_jobs = self.repo.get_all_jobs()
         from stackcheck.analyzer.metrics import MetricsEngine
         stats = MetricsEngine.aggregate(all_jobs, query_keywords="Local Database")
         

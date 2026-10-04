@@ -260,8 +260,8 @@ class JobRepository:
             conn.commit()
         return {"new_count": new_count, "updated_count": updated_count}
 
-    def get_all_jobs(self, limit: int = 500, region: Optional[str] = None, workplace: Optional[str] = None, project_id: Optional[str] = None) -> List[JobPost]:
-        """Fetch jobs with optional project and filter parameters."""
+    def get_all_jobs(self, limit: Optional[int] = None, region: Optional[str] = None, workplace: Optional[str] = None, project_id: Optional[str] = None) -> List[JobPost]:
+        """Fetch jobs with optional project and filter parameters. If limit is None, returns all matching jobs."""
         query_sql = "SELECT * FROM jobs WHERE 1=1"
         params = []
 
@@ -275,8 +275,10 @@ class JobRepository:
             query_sql += " AND workplace_type = ?"
             params.append(workplace)
 
-        query_sql += " ORDER BY scraped_at DESC LIMIT ?"
-        params.append(limit)
+        query_sql += " ORDER BY scraped_at DESC"
+        if limit is not None and limit > 0:
+            query_sql += " LIMIT ?"
+            params.append(limit)
 
         with self.db.get_connection() as conn:
             rows = conn.execute(query_sql, params).fetchall()

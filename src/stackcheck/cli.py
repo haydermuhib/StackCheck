@@ -322,7 +322,7 @@ def analyze(limit, project, region):
 def export(fmt, project):
     """Export current cached database to files."""
     repo = JobRepository()
-    jobs = repo.get_all_jobs(limit=500, project_id=project)
+    jobs = repo.get_all_jobs(project_id=project)
     if not jobs:
         console.print("[yellow]No jobs in database to export.[/]")
         return

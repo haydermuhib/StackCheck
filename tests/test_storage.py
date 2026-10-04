@@ -255,3 +255,28 @@ def test_project_query_memory_and_deduplication():
         # Total jobs should be 3, perfectly deduplicated
         assert repo.count_total_jobs(project_id="proj_mem") == 3
 
+
+def test_get_all_jobs_beyond_500_limit():
+    """Verify that get_all_jobs without limit returns all jobs and does not clamp at 500."""
+    with safe_temp_dir() as tmpdir:
+        db_file = Path(tmpdir) / "test_unlimited.db"
+        db_mgr = DatabaseManager(db_path=db_file)
+        repo = JobRepository(db_manager=db_mgr)
+
+        jobs_550 = [
+            JobPost(
+                id=f"job_{i}",
+                title=f"Engineer {i}",
+                company="ScaleCorp",
+                location="Remote",
+                project_id="big_project"
+            )
+            for i in range(550)
+        ]
+        repo.save_jobs(jobs_550, project_id="big_project")
+
+        # Must return all 550, not 500
+        fetched = repo.get_all_jobs(project_id="big_project")
+        assert len(fetched) == 550
+
+
