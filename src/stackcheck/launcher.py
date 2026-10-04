@@ -6,6 +6,20 @@ waits for verified health checks before opening the browser, and manages instanc
 
 import sys
 import os
+
+# Ensure safe UTF-8 output encoding on Windows consoles
+if sys.platform == "win32":
+    if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+    if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 import time
 import json
 import socket
@@ -105,7 +119,7 @@ def cleanup_instance_files():
 from rich.console import Console
 from rich.panel import Panel
 
-console = Console()
+console = Console(legacy_windows=False)
 
 
 def locate_target_script() -> Optional[str]:
@@ -352,7 +366,7 @@ def _launch_detached():
         pid = running_info.get("pid")
         console.print("[bold green]✔[/bold green] StackCheck background service started successfully.")
         console.print(Panel(
-            f"[bold green]● StackCheck Background Service Active[/bold green]\n\n"
+            f"[bold green]StackCheck Background Service Active[/bold green]\n\n"
             f"  🌐 [bold white]Dashboard URL:[/]  [bold underline cyan]{url}[/]\n"
             f"  🆔 [bold white]Process PID:[/]    [bold yellow]{pid}[/]\n"
             f"  📝 [bold white]Logs:[/]           [dim]{log_file_path}[/]\n\n"
@@ -384,7 +398,7 @@ def launch(detach: bool = False):
         existing_url = running.get("url", f"http://localhost:{running.get('port', 8501)}")
         existing_pid = running.get("pid")
         console.print(Panel(
-            f"[bold green]● StackCheck is already running![/bold green]\n\n"
+            f"[bold green]StackCheck is already running![/bold green]\n\n"
             f"  🌐 [bold white]Dashboard URL:[/]  [bold underline cyan]{existing_url}[/]\n"
             f"  🆔 [bold white]Process PID:[/]    [bold yellow]{existing_pid}[/]\n\n"
             f"  🚀 [italic]Opening existing dashboard in your browser...[/]\n"
@@ -435,7 +449,7 @@ def launch(detach: bool = False):
     )
     console.print(Panel(
         banner_text,
-        title="[bold green]● Server Active[/bold green]",
+        title="[bold green]Server Active[/bold green]",
         border_style="cyan",
         padding=(1, 2)
     ))

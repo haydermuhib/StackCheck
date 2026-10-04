@@ -4,6 +4,21 @@ Provides commands for searching, analyzing, exporting, and launching the Web Das
 """
 
 import sys
+import os
+
+# Ensure safe UTF-8 output encoding on Windows consoles
+if sys.platform == "win32":
+    if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+    if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 import click
 from rich.console import Console
 from rich.table import Table
@@ -18,7 +33,7 @@ from stackcheck.storage.repository import JobRepository
 from stackcheck.storage.sync import CommunitySyncClient
 from stackcheck.storage.exporters import ReportExporter
 
-console = Console()
+console = Console(legacy_windows=False)
 
 
 @click.group(invoke_without_command=True)
@@ -70,20 +85,20 @@ def status():
         mins, secs = divmod(uptime_s, 60)
         uptime_display = f"{mins}m {secs}s" if mins else f"{secs}s"
 
-        table = Table(title="🟢 StackCheck Server Status", border_style="green", header_style="bold green")
+        table = Table(title="StackCheck Server Status", border_style="green", header_style="bold green")
         table.add_column("Property", style="bold white")
         table.add_column("Value", style="cyan")
-        table.add_row("Status", "[bold green]● Active (Listening)[/]")
+        table.add_row("Status", "[bold green]Active (Listening)[/]")
         table.add_row("Local URL", f"[underline cyan]{info.get('url')}[/]")
         table.add_row("Port", str(info.get("port")))
         table.add_row("Process PID", f"[yellow]{info.get('pid')}[/]")
         table.add_row("Uptime", uptime_display)
         table.add_row("Data Directory", f"[dim]{STACKCHECK_DIR}[/]")
         console.print(table)
-        console.print("[dim]💡 Tip: Run '[bold magenta]stackcheck stop[/]' to shut down this server.[/]")
+        console.print("[dim]Tip: Run '[bold magenta]stackcheck stop[/]' to shut down this server.[/]")
     else:
         console.print(Panel(
-            "[bold yellow]○ StackCheck server is currently STOPPED.[/]\n\n"
+            "[bold yellow]StackCheck server is currently STOPPED.[/]\n\n"
             "Run [bold cyan]stackcheck[/] (foreground) or [bold cyan]stackcheck -d[/] (background daemon)\n"
             "to launch the interactive dashboard.",
             title="StackCheck Server Status",
