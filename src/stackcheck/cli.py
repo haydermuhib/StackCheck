@@ -108,6 +108,34 @@ def status():
 
 
 @main.command()
+def check():
+    """Verify runtime environment and all core web dashboard dependencies."""
+    console.print("[bold cyan]Verifying StackCheck runtime dependencies & C-extensions...[/]")
+    modules = [
+        ("NumPy Core Engine", "import numpy as np; from numpy import _core; _ = np.__version__"),
+        ("Pandas Analytics", "import pandas as pd; _ = pd.DataFrame({'a': [1]})"),
+        ("Streamlit Web Runtime", "import streamlit as st; _ = st.__version__"),
+        ("Altair Visualization", "import altair as alt; _ = alt.__version__"),
+        ("Matplotlib & Seaborn", "import matplotlib, seaborn; _ = matplotlib.__version__"),
+        ("Web Dashboard Entrypoint", "import stackcheck.web.app"),
+        ("Web Charts Engine", "import stackcheck.web.charts"),
+    ]
+    failed = False
+    for label, code in modules:
+        try:
+            exec(code, {})
+            console.print(f"  [bold green]✔[/] {label}")
+        except Exception as e:
+            console.print(f"  [bold red]✘[/] {label}: {e}")
+            failed = True
+
+    if failed:
+        console.print("\n[bold red]✘ Runtime verification failed! Missing compiled libraries.[/]")
+        sys.exit(1)
+    console.print("\n[bold green]✔ All core web runtime dependencies and extensions verified successfully![/]")
+
+
+@main.command()
 @click.option("--yes", "-y", is_flag=True, default=False, help="Automatically download and install updates without asking.")
 def update(yes):
     """Check for latest release updates and upgrade in-place."""

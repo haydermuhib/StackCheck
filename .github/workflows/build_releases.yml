@@ -61,6 +61,7 @@ jobs:
           "${{ matrix.dist_file }}" --version
           "${{ matrix.dist_file }}" --help
           "${{ matrix.dist_file }}" status
+          "${{ matrix.dist_file }}" check
 
       - name: Rename Artifact for Release
         shell: bash
