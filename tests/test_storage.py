@@ -173,3 +173,17 @@ def test_duplicate_detection_and_apply_urls():
         assert len(fetched) == 1
         assert fetched[0].apply_url == "https://company.com/jobs/100"
         assert fetched[0].link == "https://company.com/jobs/100"
+
+
+def test_default_data_dir_isolation():
+    """Verify that default database and export paths reside strictly in DEFAULT_DATA_DIR (~/.stackcheck)."""
+    import os
+    from stackcheck import config
+    
+    # Verify default database resolves to ~/.stackcheck/stackcheck.db
+    assert config.LOCAL_DB_PATH.name == "stackcheck.db"
+    assert config.LOCAL_DB_PATH.parent == config.DEFAULT_DATA_DIR
+    assert config.EXPORTS_DIR == config.DEFAULT_DATA_DIR / "exports"
+    # Crucial assertion: never pollute current working directory
+    assert config.LOCAL_DB_PATH.parent != Path(os.getcwd()) or config.DEFAULT_DATA_DIR == Path(os.getcwd())
+

@@ -161,7 +161,10 @@ def wait_for_server_and_open_browser(url: str, port: int, timeout: float = 15.0)
 
         # Brief pause to let Streamlit HTTP routes settle
         time.sleep(0.4)
-        webbrowser.open(url)
+        try:
+            webbrowser.open(url)
+        except Exception:
+            print(f"  ℹ️ Could not open browser automatically. Please open: {url}")
 
     t = threading.Thread(target=_worker, daemon=True)
     t.start()
