@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS search_runs (
     region TEXT,
     workplace_type TEXT,
     experience_level TEXT,
+    query_limit INTEGER DEFAULT 25,
     total_found INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -112,6 +113,12 @@ class DatabaseManager:
                 cols = [row["name"] for row in cursor.fetchall()]
                 if cols and "project_id" not in cols:
                     conn.execute(f"ALTER TABLE {table} ADD COLUMN project_id TEXT DEFAULT 'default'")
+
+            # Migration check: Ensure query_limit column exists in search_runs
+            cursor = conn.execute("PRAGMA table_info(search_runs)")
+            cols = [row["name"] for row in cursor.fetchall()]
+            if cols and "query_limit" not in cols:
+                conn.execute("ALTER TABLE search_runs ADD COLUMN query_limit INTEGER DEFAULT 25")
             
             # Create indexes now that all columns are guaranteed to exist
             conn.executescript(INDEXES_SQL)

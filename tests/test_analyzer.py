@@ -105,3 +105,82 @@ def test_metrics_engine_aggregation():
     # Check co-occurrence
     co_pairs = [(p.skill_a, p.skill_b) for p in stats.co_occurrences]
     assert ("Python", "SQL") in co_pairs or ("SQL", "Python") in co_pairs
+
+
+def test_job_market_extended_metrics():
+    from stackcheck.models import SalaryInfo
+    jobs = [
+        JobPost(
+            id="j1",
+            title="Senior Data Engineer",
+            company="Airbnb",
+            location="San Francisco, CA",
+            country="United States",
+            region=Region.USA,
+            workplace_type=WorkplaceType.REMOTE,
+            experience_level=ExperienceLevel.SENIOR,
+            salary=SalaryInfo(min_amount=160000, max_amount=190000),
+            extracted_skills=[
+                ExtractedSkill(name="Python", canonical_name="Python", category=TechCategory.PROGRAMMING_LANGUAGES, priority_weight=1.8),
+                ExtractedSkill(name="SQL", canonical_name="SQL", category=TechCategory.PROGRAMMING_LANGUAGES, priority_weight=1.5),
+                ExtractedSkill(name="Spark", canonical_name="Spark", category=TechCategory.DATA_ENGINEERING, priority_weight=1.2),
+            ]
+        ),
+        JobPost(
+            id="j2",
+            title="Junior Data Analyst",
+            company="Airbnb",
+            location="London, UK",
+            country="United Kingdom",
+            region=Region.EUROPE,
+            workplace_type=WorkplaceType.ONSITE,
+            experience_level=ExperienceLevel.ENTRY,
+            salary=SalaryInfo(min_amount=45000, max_amount=55000),
+            extracted_skills=[
+                ExtractedSkill(name="SQL", canonical_name="SQL", category=TechCategory.PROGRAMMING_LANGUAGES, priority_weight=1.8),
+                ExtractedSkill(name="Excel", canonical_name="Excel", category=TechCategory.OTHER, priority_weight=1.0),
+            ]
+        ),
+        JobPost(
+            id="j3",
+            title="Lead ML Engineer",
+            company="Meta",
+            location="Remote",
+            country="United States",
+            region=Region.USA,
+            workplace_type=WorkplaceType.REMOTE,
+            experience_level=ExperienceLevel.LEAD,
+            salary=None,  # No salary disclosed
+            extracted_skills=[
+                ExtractedSkill(name="Python", canonical_name="Python", category=TechCategory.PROGRAMMING_LANGUAGES, priority_weight=1.8),
+                ExtractedSkill(name="PyTorch", canonical_name="PyTorch", category=TechCategory.AI_ML, priority_weight=1.5),
+            ]
+        )
+    ]
+
+    stats = MetricsEngine.aggregate(jobs, query_keywords="Data")
+    # 2 out of 3 jobs have disclosed salary: 66.7%
+    assert 66.0 <= stats.salary_transparency_pct <= 67.0
+    assert len(stats.country_salary_data) == 2
+    assert stats.country_salary_data[0]["country"] == "United States"
+    assert stats.country_salary_data[0]["salary"] == 175000
+
+    # Top hiring companies
+    assert len(stats.top_hiring_companies) == 2
+    assert stats.top_hiring_companies[0]["company"] == "Airbnb"
+    assert stats.top_hiring_companies[0]["job_count"] == 2
+
+    # Stack density
+    assert stats.stack_density_stats["avg_skills_per_job"] > 2.0
+    assert stats.stack_density_stats["median_skills"] in (2, 2.0, 3)
+
+    # Experience salary stats
+    assert "senior" in stats.experience_salary_stats
+    assert stats.experience_salary_stats["senior"]["median"] == 175000
+    assert "entry" in stats.experience_salary_stats
+    assert stats.experience_salary_stats["entry"]["median"] == 50000
+
+    # Workplace salary stats
+    assert "remote" in stats.workplace_salary_stats
+    assert stats.workplace_salary_stats["remote"]["median"] == 175000
+

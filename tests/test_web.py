@@ -97,3 +97,35 @@ def test_charts_generation():
     fig_cat = plot_category_breakdown(stats)
     assert fig_cat is not None
     plt.close(fig_cat)
+
+
+def test_extended_job_market_charts():
+    from stackcheck.web.charts import (
+        plot_salary_by_country_scatter,
+        plot_top_hiring_companies,
+        plot_experience_skill_matrix,
+        plot_stack_density_distribution
+    )
+    jobs = create_sample_jobs()
+    stats = MetricsEngine.aggregate(jobs, query_keywords="Data Analyst")
+
+    # 1. Country scatter plot
+    fig_scatter = plot_salary_by_country_scatter(stats.country_salary_data)
+    assert fig_scatter is not None
+    plt.close(fig_scatter)
+
+    # 2. Top hiring companies
+    fig_comp = plot_top_hiring_companies(stats.top_hiring_companies)
+    assert fig_comp is not None
+    plt.close(fig_comp)
+
+    # 3. Experience skill matrix
+    fig_exp_matrix = plot_experience_skill_matrix(stats.experience_skills_breakdown)
+    assert fig_exp_matrix is not None
+    plt.close(fig_exp_matrix)
+
+    # 4. Stack density distribution
+    fig_density = plot_stack_density_distribution(stats.stack_density_stats)
+    assert fig_density is not None
+    plt.close(fig_density)
+

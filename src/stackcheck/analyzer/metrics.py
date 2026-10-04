@@ -161,7 +161,7 @@ class MetricsEngine:
                 workplace_distribution=dict(reg_workplace)
             )
 
-        # 6. Salary by Tech Stack (Top technologies with at least 2 salary samples)
+        # 6. Salary by Tech Stack (Top technologies with at least 1 salary sample)
         salary_by_top_tech: Dict[str, Dict[str, float]] = {}
         for skill, salaries in salary_tech_map.items():
             if len(salaries) >= 1:
@@ -175,6 +175,112 @@ class MetricsEngine:
                     "samples": len(salaries)
                 }
 
+        # 7. Job Market Metrics: Transparency & Country Scatter Records
+        import statistics
+
+        country_salary_data = []
+        salaries_all = []
+        salaries_by_exp: Dict[str, List[float]] = defaultdict(list)
+        skills_by_exp: Dict[str, Counter] = defaultdict(Counter)
+        salaries_by_workplace: Dict[str, List[float]] = defaultdict(list)
+        company_jobs_counter: Counter = Counter()
+        company_skills_map: Dict[str, Counter] = defaultdict(Counter)
+        skills_per_job_list = []
+
+        for job in jobs:
+            comp_clean = job.company.strip() if job.company else "Unknown"
+            if comp_clean and comp_clean != "Unknown":
+                company_jobs_counter[comp_clean] += 1
+
+            job_unique_skills = {s.canonical_name for s in job.extracted_skills}
+            skills_per_job_list.append(len(job_unique_skills))
+
+            for s in job_unique_skills:
+                skills_by_exp[job.experience_level.value][s] += 1
+                if comp_clean and comp_clean != "Unknown":
+                    company_skills_map[comp_clean][s] += 1
+
+            if job.salary and (job.salary.min_amount or job.salary.max_amount):
+                val = job.salary.min_amount or job.salary.max_amount or 0
+                if job.salary.min_amount and job.salary.max_amount:
+                    val = (job.salary.min_amount + job.salary.max_amount) / 2.0
+                if job.salary.period == "hourly" and val < 500:
+                    val = val * 2080
+                elif job.salary.period == "monthly" and val < 30000:
+                    val = val * 12
+
+                if val > 5000:  # Reasonable annual salary floor
+                    norm_val = round(val, 0)
+                    salaries_all.append(norm_val)
+                    salaries_by_exp[job.experience_level.value].append(norm_val)
+                    salaries_by_workplace[job.workplace_type.value].append(norm_val)
+
+                    c_name = job.country or (job.region.value if job.region != Region.OTHER else "Global Remote")
+                    country_salary_data.append({
+                        "country": c_name,
+                        "salary": norm_val,
+                        "salary_k": round(norm_val / 1000.0, 1),
+                        "experience": job.experience_level.value.capitalize(),
+                        "workplace": job.workplace_type.value.capitalize(),
+                        "title": job.title,
+                        "company": comp_clean
+                    })
+
+        salary_transparency_pct = round((len(salaries_all) / total_jobs) * 100, 1)
+
+        # 8. Experience Seniority Salary & Skill Tiering
+        experience_salary_stats: Dict[str, Dict[str, float]] = {}
+        for exp_key, s_list in salaries_by_exp.items():
+            if s_list:
+                experience_salary_stats[exp_key] = {
+                    "min": round(min(s_list), 0),
+                    "median": round(statistics.median(s_list), 0),
+                    "max": round(max(s_list), 0),
+                    "avg": round(sum(s_list) / len(s_list), 0),
+                    "count": len(s_list)
+                }
+
+        experience_skills_breakdown: Dict[str, List[Dict[str, Any]]] = {}
+        for exp_key, c_counter in skills_by_exp.items():
+            exp_total = experience_dist.get(exp_key, 1) or 1
+            experience_skills_breakdown[exp_key] = [
+                {
+                    "skill": s,
+                    "count": cnt,
+                    "percentage": round((cnt / exp_total) * 100, 1)
+                }
+                for s, cnt in c_counter.most_common(6)
+            ]
+
+        # 9. Workplace Salary Differentials (Remote vs Onsite Premium)
+        workplace_salary_stats: Dict[str, Dict[str, float]] = {}
+        for wp_key, s_list in salaries_by_workplace.items():
+            if s_list:
+                workplace_salary_stats[wp_key] = {
+                    "min": round(min(s_list), 0),
+                    "median": round(statistics.median(s_list), 0),
+                    "max": round(max(s_list), 0),
+                    "count": len(s_list)
+                }
+
+        # 10. Top Hiring Companies
+        top_hiring_companies = []
+        for comp, cnt in company_jobs_counter.most_common(10):
+            top_hiring_companies.append({
+                "company": comp,
+                "job_count": cnt,
+                "percentage": round((cnt / total_jobs) * 100, 1),
+                "top_skills": [s for s, _ in company_skills_map[comp].most_common(4)]
+            })
+
+        # 11. Stack Density (Skills required per job)
+        stack_density_stats = {
+            "avg_skills_per_job": round(sum(skills_per_job_list) / total_jobs, 1) if skills_per_job_list else 0.0,
+            "median_skills": statistics.median(skills_per_job_list) if skills_per_job_list else 0,
+            "max_skills": max(skills_per_job_list) if skills_per_job_list else 0,
+            "distribution": dict(Counter(skills_per_job_list))
+        }
+
         return AggregatedStats(
             query_keywords=query_keywords,
             total_jobs=total_jobs,
@@ -186,7 +292,14 @@ class MetricsEngine:
             weighted_top_skills=weighted_top_skills,
             co_occurrences=co_occurrences,
             geo_breakdown=geo_breakdown,
-            salary_by_top_tech=salary_by_top_tech
+            salary_by_top_tech=salary_by_top_tech,
+            salary_transparency_pct=salary_transparency_pct,
+            country_salary_data=country_salary_data,
+            experience_salary_stats=experience_salary_stats,
+            experience_skills_breakdown=experience_skills_breakdown,
+            top_hiring_companies=top_hiring_companies,
+            stack_density_stats=stack_density_stats,
+            workplace_salary_stats=workplace_salary_stats
         )
 
     @staticmethod

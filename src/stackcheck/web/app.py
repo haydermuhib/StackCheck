@@ -26,7 +26,11 @@ from stackcheck.web.charts import (
     plot_co_occurrence_heatmap,
     plot_salary_by_tech,
     plot_distributions,
-    plot_category_breakdown
+    plot_category_breakdown,
+    plot_salary_by_country_scatter,
+    plot_top_hiring_companies,
+    plot_experience_skill_matrix,
+    plot_stack_density_distribution
 )
 
 
@@ -175,6 +179,43 @@ def main():
             p_name = switched_proj.name if switched_proj else "Project"
             st.session_state.stats = MetricsEngine.aggregate(st.session_state.jobs, query_keywords=p_name)
             st.rerun()
+
+        # Display saved criteria for the currently selected project
+        if active_project.last_keywords:
+            with st.container():
+                st.markdown(
+                    f"""
+                    <div style='background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 10px 12px; border-radius: 6px; margin: 10px 0;'>
+                        <div style='font-size: 0.8rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;'>📌 SAVED PROJECT CRITERIA</div>
+                        <div style='font-size: 0.78rem; color: #334155; margin-bottom: 2px;'><b>Query:</b> <code style='color: #0284c7;'>{active_project.last_keywords}</code></div>
+                        <div style='font-size: 0.78rem; color: #334155; margin-bottom: 2px;'><b>Location:</b> {active_project.last_location or "Global / Any"}</div>
+                        <div style='font-size: 0.78rem; color: #334155;'><b>Workplace:</b> {active_project.last_workplace or "Any"} | <b>Level:</b> {active_project.last_experience or "All"}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                if st.button("🔄 Scrape More / Re-run Query", width="stretch", key="btn_rerun_saved_query"):
+                    with st.spinner(f"Scraping fresh jobs for '{active_project.last_keywords}'..."):
+                        wp_enum = WorkplaceType(active_project.last_workplace) if active_project.last_workplace and active_project.last_workplace != "any" else None
+                        exp_enum = ExperienceLevel(active_project.last_experience) if active_project.last_experience and active_project.last_experience != "any" else None
+                        q = SearchQuery(
+                            keywords=active_project.last_keywords,
+                            location=active_project.last_location or "",
+                            workplace_type=wp_enum,
+                            experience_level=exp_enum,
+                            limit=active_project.last_limit or 50,
+                            project_id=active_project.id
+                        )
+                        fresh_jobs = st.session_state.client.search_jobs(q)
+                        if fresh_jobs:
+                            run_id = st.session_state.repo.save_search_run(q, total_found=len(fresh_jobs), project_id=active_project.id)
+                            res = st.session_state.repo.save_jobs(fresh_jobs, search_run_id=run_id, project_id=active_project.id)
+                            st.session_state.jobs = st.session_state.repo.get_all_jobs(project_id=active_project.id)
+                            st.session_state.stats = MetricsEngine.aggregate(st.session_state.jobs, query_keywords=active_project.last_keywords)
+                            st.session_state.flash_msg = ("success", f"✔ Scraped {len(fresh_jobs)} postings: {res['new_count']} new added ({res['updated_count']} duplicates updated).")
+                            st.rerun()
+                        else:
+                            st.warning("No new postings found on HiringCafe for this query.")
 
         # Project management expander
         with st.expander("➕ Create or Manage Projects"):
@@ -446,14 +487,61 @@ def main():
         if not jobs:
             st.info("Run a search in the sidebar to populate deep statistical visualizations.")
         else:
+            # High-Level Market Analytics KPIs
+            mkpi1, mkpi2, mkpi3, mkpi4 = st.columns(4)
+            with mkpi1:
+                st.metric("Salary Disclosure Rate", f"{stats.salary_transparency_pct:.1f}%", help="Percentage of postings with explicit salary information")
+            with mkpi2:
+                avg_b = stats.stack_density_stats.get("avg_skills_per_job", 0.0) if stats.stack_density_stats else 0.0
+                st.metric("Avg Stack Breadth", f"{avg_b} skills / job", help="Average number of tech skills requested per job post")
+            with mkpi3:
+                # Calculate remote premium if available
+                rem_med = stats.workplace_salary_stats.get("remote", {}).get("median") if stats.workplace_salary_stats else None
+                ons_med = stats.workplace_salary_stats.get("onsite", {}).get("median") if stats.workplace_salary_stats else None
+                if rem_med and ons_med and ons_med > 0:
+                    diff_pct = ((rem_med - ons_med) / ons_med) * 100
+                    st.metric("Remote Pay Premium", f"${rem_med:,.0f}/yr", delta=f"{diff_pct:+.1f}% vs Onsite")
+                elif rem_med:
+                    st.metric("Remote Median Salary", f"${rem_med:,.0f}/yr")
+                else:
+                    st.metric("Remote Pay Premium", "N/A", help="Insufficient remote/onsite salary samples")
+            with mkpi4:
+                max_b = stats.stack_density_stats.get("max_skills", 0) if stats.stack_density_stats else 0
+                st.metric("Max Stack Density", f"{max_b} skills", help="Highest number of skills required in a single job posting")
+
+            st.markdown("---")
+
+            # 1. Geographic Compensation Scatter / Strip Plot
+            st.subheader("🗺️ Geographic Compensation Distribution")
+            st.caption("Categorical strip plot with horizontal jitter showing individual job posting salaries across countries, with median compensation benchmarks.")
+            col_opt1, col_opt2 = st.columns([1, 3])
+            with col_opt1:
+                color_option = st.radio(
+                    "Color Markers By:",
+                    options=["Seniority Level", "Workplace Mode"],
+                    horizontal=True,
+                    key="geo_scatter_color_by"
+                )
+                color_key = "experience" if "Seniority" in color_option else "workplace"
+
+            country_fig = plot_salary_by_country_scatter(stats.country_salary_data, color_by=color_key)
+            if country_fig:
+                st.pyplot(country_fig, width="stretch")
+            else:
+                st.info("Insufficient salary and location samples in the current dataset to render country compensation scatter (minimum 2 samples required).")
+
+            st.markdown("---")
+
+            # 2. Tech Stack Synergies & Co-Occurrence
             st.subheader("🔗 Tech Stack Synergies & Co-Occurrence Correlation")
             st.caption("Visualizes how often technologies co-occur in the same job requirements (e.g. Python + SQL, Power BI + DAX).")
-            
             heatmap_fig = plot_co_occurrence_heatmap(stats, top_n=10)
             if heatmap_fig:
                 st.pyplot(heatmap_fig, width="stretch")
 
             st.markdown("---")
+
+            # 3. Salary Benchmarks & Workplace/Experience Distributions
             col_sal, col_dist = st.columns([1.2, 1])
 
             with col_sal:
@@ -472,7 +560,64 @@ def main():
                 if fig_exp:
                     st.pyplot(fig_exp, width="stretch")
 
-            # Geographic table
+            st.markdown("---")
+
+            # 4. Seniority & Experience Intelligence
+            st.subheader("🎓 Seniority & Experience Intelligence")
+            st.caption("Top demanded technologies and salary progression across career seniority tiers.")
+            col_exp_chart, col_exp_bench = st.columns([1.5, 1])
+
+            with col_exp_chart:
+                exp_fig = plot_experience_skill_matrix(stats.experience_skills_breakdown)
+                if exp_fig:
+                    st.pyplot(exp_fig, width="stretch")
+                else:
+                    st.info("No experience-segmented skill distribution data available.")
+
+            with col_exp_bench:
+                st.markdown("##### 📊 Compensation by Experience Tier")
+                if stats.experience_salary_stats:
+                    exp_rows = []
+                    order = ["entry", "mid", "senior", "lead", "executive"]
+                    sorted_tiers = sorted(
+                        stats.experience_salary_stats.keys(),
+                        key=lambda x: order.index(x.lower()) if x.lower() in order else 99
+                    )
+                    for tier in sorted_tiers:
+                        t_data = stats.experience_salary_stats[tier]
+                        exp_rows.append({
+                            "Tier": tier.capitalize(),
+                            "Median Salary": f"${t_data['median']:,.0f}",
+                            "Min - Max Range": f"${t_data['min']:,.0f} - ${t_data['max']:,.0f}",
+                            "Samples": int(t_data["count"])
+                        })
+                    st.dataframe(pd.DataFrame(exp_rows), width="stretch", hide_index=True)
+                else:
+                    st.caption("No salary samples tagged with experience level.")
+
+            st.markdown("---")
+
+            # 5. Employer Landscape & Tech Stack Density
+            st.subheader("🏢 Employer Landscape & Tech Stack Density")
+            col_comp, col_dens = st.columns([1.2, 1])
+
+            with col_comp:
+                st.caption("Top companies actively hiring for these skillsets and their primary tech stacks.")
+                comp_fig = plot_top_hiring_companies(stats.top_hiring_companies, top_n=10)
+                if comp_fig:
+                    st.pyplot(comp_fig, width="stretch")
+                else:
+                    st.info("No employer hiring data available.")
+
+            with col_dens:
+                st.caption("Distribution of how many distinct technologies/tools are demanded per job posting.")
+                dens_fig = plot_stack_density_distribution(stats.stack_density_stats)
+                if dens_fig:
+                    st.pyplot(dens_fig, width="stretch")
+                else:
+                    st.info("No stack density distribution available.")
+
+            # 6. Geographic Table
             if stats.geo_breakdown:
                 st.markdown("---")
                 st.subheader("🌐 Regional Tech Partitioning")

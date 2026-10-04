@@ -83,6 +83,11 @@ class Project(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     total_jobs: int = 0
     total_searches: int = 0
+    last_keywords: Optional[str] = None
+    last_location: Optional[str] = None
+    last_workplace: Optional[str] = None
+    last_experience: Optional[str] = None
+    last_limit: Optional[int] = None
 
 
 class JobPost(BaseModel):
@@ -157,3 +162,11 @@ class AggregatedStats(BaseModel):
     co_occurrences: List[SkillCoOccurrence]
     geo_breakdown: Dict[str, GeoTechBreakdown]
     salary_by_top_tech: Dict[str, Dict[str, float]]
+    # New job market analytical dimensions
+    salary_transparency_pct: float = 0.0
+    country_salary_data: List[Dict[str, Any]] = Field(default_factory=list)
+    experience_salary_stats: Dict[str, Dict[str, float]] = Field(default_factory=dict)
+    experience_skills_breakdown: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
+    top_hiring_companies: List[Dict[str, Any]] = Field(default_factory=list)
+    stack_density_stats: Dict[str, Any] = Field(default_factory=dict)
+    workplace_salary_stats: Dict[str, Dict[str, float]] = Field(default_factory=dict)

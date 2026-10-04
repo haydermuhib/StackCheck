@@ -27,7 +27,7 @@ class JobRepository:
         return Project(id=pid, name=name.strip(), description=description.strip())
 
     def get_projects(self) -> List[Project]:
-        """Fetch all projects with job and search counts."""
+        """Fetch all projects with job and search counts and last query metadata."""
         with self.db.get_connection() as conn:
             query = """
             SELECT p.id, p.name, p.description, p.created_at, p.updated_at,
@@ -42,14 +42,29 @@ class JobRepository:
             rows = conn.execute(query).fetchall()
             projects = []
             for r in rows:
+                pid = r["id"]
+                last_run = conn.execute(
+                    "SELECT keywords, location, workplace_type, experience_level, query_limit, total_found FROM search_runs WHERE project_id = ? ORDER BY created_at DESC LIMIT 1",
+                    (pid,)
+                ).fetchone()
+
+                last_limit_val = None
+                if last_run:
+                    last_limit_val = last_run["query_limit"] if ("query_limit" in last_run.keys() and last_run["query_limit"]) else last_run["total_found"]
+
                 projects.append(Project(
-                    id=r["id"],
+                    id=pid,
                     name=r["name"],
                     description=r["description"] or "",
                     created_at=datetime.fromisoformat(r["created_at"]) if r["created_at"] else datetime.utcnow(),
                     updated_at=datetime.fromisoformat(r["updated_at"]) if r["updated_at"] else datetime.utcnow(),
                     total_jobs=r["total_jobs"] or 0,
-                    total_searches=r["total_searches"] or 0
+                    total_searches=r["total_searches"] or 0,
+                    last_keywords=last_run["keywords"] if last_run else None,
+                    last_location=last_run["location"] if last_run else None,
+                    last_workplace=last_run["workplace_type"] if last_run else None,
+                    last_experience=last_run["experience_level"] if last_run else None,
+                    last_limit=last_limit_val,
                 ))
             return projects
 
@@ -68,6 +83,16 @@ class JobRepository:
             r = conn.execute(query, (project_id,)).fetchone()
             if not r:
                 return None
+
+            last_run = conn.execute(
+                "SELECT keywords, location, workplace_type, experience_level, query_limit, total_found FROM search_runs WHERE project_id = ? ORDER BY created_at DESC LIMIT 1",
+                (project_id,)
+            ).fetchone()
+
+            last_limit_val = None
+            if last_run:
+                last_limit_val = last_run["query_limit"] if ("query_limit" in last_run.keys() and last_run["query_limit"]) else last_run["total_found"]
+
             return Project(
                 id=r["id"],
                 name=r["name"],
@@ -75,7 +100,33 @@ class JobRepository:
                 created_at=datetime.fromisoformat(r["created_at"]) if r["created_at"] else datetime.utcnow(),
                 updated_at=datetime.fromisoformat(r["updated_at"]) if r["updated_at"] else datetime.utcnow(),
                 total_jobs=r["total_jobs"] or 0,
-                total_searches=r["total_searches"] or 0
+                total_searches=r["total_searches"] or 0,
+                last_keywords=last_run["keywords"] if last_run else None,
+                last_location=last_run["location"] if last_run else None,
+                last_workplace=last_run["workplace_type"] if last_run else None,
+                last_experience=last_run["experience_level"] if last_run else None,
+                last_limit=last_limit_val,
+            )
+
+    def get_project_latest_query(self, project_id: str) -> Optional[SearchQuery]:
+        """Fetch the most recent SearchQuery used in this project."""
+        with self.db.get_connection() as conn:
+            r = conn.execute(
+                "SELECT keywords, location, workplace_type, experience_level, query_limit, total_found FROM search_runs WHERE project_id = ? ORDER BY created_at DESC LIMIT 1",
+                (project_id,)
+            ).fetchone()
+            if not r:
+                return None
+            wp = WorkplaceType(r["workplace_type"]) if r["workplace_type"] and r["workplace_type"] != "any" else None
+            exp = ExperienceLevel(r["experience_level"]) if r["experience_level"] and r["experience_level"] != "any" else None
+            q_limit = r["query_limit"] if ("query_limit" in r.keys() and r["query_limit"]) else (r["total_found"] or 25)
+            return SearchQuery(
+                keywords=r["keywords"] or "Data Analyst",
+                location=r["location"] or "",
+                workplace_type=wp,
+                experience_level=exp,
+                limit=q_limit,
+                project_id=project_id
             )
 
     def delete_project(self, project_id: str) -> bool:
@@ -110,8 +161,8 @@ class JobRepository:
             )
             conn.execute(
                 """
-                INSERT INTO search_runs (id, project_id, keywords, location, region, workplace_type, experience_level, total_found)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO search_runs (id, project_id, keywords, location, region, workplace_type, experience_level, query_limit, total_found)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     run_id,
@@ -121,6 +172,7 @@ class JobRepository:
                     query.region.value if query.region else None,
                     query.workplace_type.value if query.workplace_type else None,
                     query.experience_level.value if query.experience_level else None,
+                    query.limit,
                     total_found
                 )
             )

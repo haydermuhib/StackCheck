@@ -205,3 +205,53 @@ def test_default_data_dir_isolation():
     # Crucial assertion: never pollute current working directory
     assert config.LOCAL_DB_PATH.parent != Path(os.getcwd()) or config.DEFAULT_DATA_DIR == Path(os.getcwd())
 
+
+def test_project_query_memory_and_deduplication():
+    """Verify that saving search runs persists criteria in project metadata and deduplicates on re-runs."""
+    with safe_temp_dir() as tmpdir:
+        db_file = Path(tmpdir) / "test_memory.db"
+        db_mgr = DatabaseManager(db_path=db_file)
+        repo = JobRepository(db_manager=db_mgr)
+
+        # Create a project
+        p = repo.create_project(name="Memory Project", project_id="proj_mem")
+        assert p.last_keywords is None
+
+        # Execute first search run
+        q1 = SearchQuery(
+            keywords="Python Developer",
+            location="Remote",
+            workplace_type=WorkplaceType.REMOTE,
+            experience_level=ExperienceLevel.SENIOR,
+            limit=25
+        )
+        run_id_1 = repo.save_search_run(q1, total_found=2, project_id="proj_mem")
+        
+        # Verify query memory attached to project
+        p_loaded = repo.get_project("proj_mem")
+        assert p_loaded.last_keywords == "Python Developer"
+        assert p_loaded.last_location == "Remote"
+        assert p_loaded.last_workplace == "remote"
+        assert p_loaded.last_experience == "senior"
+        assert p_loaded.last_limit == 25
+
+        # Save initial jobs
+        job1 = JobPost(id="j1", title="Python Dev 1", company="TechCorp", location="Remote", project_id="proj_mem")
+        job2 = JobPost(id="j2", title="Python Dev 2", company="DataCorp", location="Remote", project_id="proj_mem")
+        res1 = repo.save_jobs([job1, job2], project_id="proj_mem", search_run_id=run_id_1)
+        assert res1["new_count"] == 2
+        assert repo.count_total_jobs(project_id="proj_mem") == 2
+
+        # Re-run query: scrape more, with 1 existing duplicate (j2) and 1 new job (j3)
+        job2_dup = JobPost(id="j2", title="Python Dev 2 (Refreshed)", company="DataCorp", location="Remote", project_id="proj_mem")
+        job3_new = JobPost(id="j3", title="Python Dev 3", company="CloudCorp", location="Remote", project_id="proj_mem")
+        
+        q2 = SearchQuery(keywords="Python Developer", location="Remote", limit=50)
+        run_id_2 = repo.save_search_run(q2, total_found=2, project_id="proj_mem")
+        res2 = repo.save_jobs([job2_dup, job3_new], project_id="proj_mem", search_run_id=run_id_2)
+        
+        assert res2["new_count"] == 1
+        assert res2["updated_count"] == 1
+        # Total jobs should be 3, perfectly deduplicated
+        assert repo.count_total_jobs(project_id="proj_mem") == 3
+
