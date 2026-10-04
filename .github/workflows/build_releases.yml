@@ -54,6 +54,14 @@ jobs:
         run: |
           python build_app.py
 
+      - name: Smoke Test Standalone Binary
+        shell: bash
+        run: |
+          chmod +x "${{ matrix.dist_file }}" || true
+          "${{ matrix.dist_file }}" --version
+          "${{ matrix.dist_file }}" --help
+          "${{ matrix.dist_file }}" status
+
       - name: Rename Artifact for Release
         shell: bash
         run: |
