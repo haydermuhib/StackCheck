@@ -110,32 +110,31 @@ def main():
     init_session()
     active_project = st.session_state.repo.get_project(st.session_state.active_project_id) or Project(id="default", name="Default Workspace")
 
-    # Custom styling with adaptive light & dark mode support
+    # Dedicated Dark Theme Styling
     st.markdown("""
     <style>
     .main-header {
         font-size: 2.2rem;
         font-weight: 800;
-        color: var(--text-color, #0f172a);
+        color: #f8fafc;
         margin-bottom: 0.2rem;
         letter-spacing: -0.02em;
     }
     .sub-header {
         font-size: 1.05rem;
-        color: var(--text-color, #475569);
-        opacity: 0.85;
+        color: #94a3b8;
         margin-bottom: 1.5rem;
     }
     .metric-card {
-        background: rgba(148, 163, 184, 0.08);
-        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: #1e293b;
+        border: 1px solid #334155;
         border-radius: 8px;
         padding: 1rem;
         text-align: center;
     }
     .saved-criteria-card {
-        background: rgba(59, 130, 246, 0.07);
-        border: 1px solid rgba(59, 130, 246, 0.28);
+        background: #1e293b;
+        border: 1px solid #334155;
         border-left: 4px solid #3b82f6;
         padding: 10px 14px;
         border-radius: 6px;
@@ -144,29 +143,14 @@ def main():
     .saved-criteria-title {
         font-size: 0.82rem;
         font-weight: 700;
-        color: var(--text-color, #0f172a);
+        color: #f8fafc;
         margin-bottom: 5px;
         letter-spacing: 0.04em;
     }
     .saved-criteria-item {
         font-size: 0.8rem;
-        color: var(--text-color, #334155);
-        opacity: 0.92;
+        color: #cbd5e1;
         margin-bottom: 3px;
-    }
-    @media (prefers-color-scheme: dark) {
-        .main-header {
-            color: #f8fafc !important;
-        }
-        .sub-header {
-            color: #cbd5e1 !important;
-        }
-        .saved-criteria-title {
-            color: #f8fafc !important;
-        }
-        .saved-criteria-item {
-            color: #e2e8f0 !important;
-        }
     }
     </style>
     """, unsafe_allow_html=True)

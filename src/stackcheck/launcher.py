@@ -169,6 +169,30 @@ def locate_target_script() -> Optional[str]:
                         if not dest_file.exists() or dest_file.stat().st_size != asset_file.stat().st_size:
                             dest_file.write_bytes(asset_file.read_bytes())
 
+            # Mirror Streamlit dark theme configuration
+            dark_cfg = """[theme]
+base = "dark"
+primaryColor = "#3b82f6"
+backgroundColor = "#0f172a"
+secondaryBackgroundColor = "#1e293b"
+textColor = "#f8fafc"
+font = "sans serif"
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+"""
+            for cfg_dir in [STACKCHECK_DIR / ".streamlit", target_dir / ".streamlit"]:
+                try:
+                    cfg_dir.mkdir(parents=True, exist_ok=True)
+                    (cfg_dir / "config.toml").write_text(dark_cfg, encoding="utf-8")
+                except Exception:
+                    pass
+
             return str(persistent_app)
         except Exception:
             return str(source_app)
@@ -437,6 +461,11 @@ def launch(detach: bool = False):
     config.set_option("browser.serverAddress", "localhost")
     config.set_option("browser.gatherUsageStats", False)
     config.set_option("client.toolbarMode", "viewer")
+    config.set_option("theme.base", "dark")
+    config.set_option("theme.primaryColor", "#3b82f6")
+    config.set_option("theme.backgroundColor", "#0f172a")
+    config.set_option("theme.secondaryBackgroundColor", "#1e293b")
+    config.set_option("theme.textColor", "#f8fafc")
 
     flag_options = {
         "server_port": port,
@@ -448,7 +477,12 @@ def launch(detach: bool = False):
         "browser_gatherUsageStats": False,
         "client_toolbarMode": "viewer",
         "global_developmentMode": False,
-        "logger_level": "warning"
+        "logger_level": "warning",
+        "theme_base": "dark",
+        "theme_primaryColor": "#3b82f6",
+        "theme_backgroundColor": "#0f172a",
+        "theme_secondaryBackgroundColor": "#1e293b",
+        "theme_textColor": "#f8fafc"
     }
 
     bootstrap.load_config_options(flag_options)
