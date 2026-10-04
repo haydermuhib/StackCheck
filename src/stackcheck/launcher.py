@@ -23,6 +23,7 @@ if sys.platform == "win32":
 import time
 import json
 import socket
+import shutil
 import atexit
 import signal
 import threading
@@ -122,6 +123,59 @@ from rich.panel import Panel
 console = Console(legacy_windows=False)
 
 
+def ensure_persistent_streamlit_static() -> Path:
+    """
+    Ensure Streamlit frontend assets are mirrored to persistent user storage.
+    Prevents Starlette StaticFiles 500 / FileNotFoundError crashes when
+    temporary PyInstaller _MEI directories are deleted after parent process exit.
+    """
+    persistent_static = STACKCHECK_DIR / "streamlit_static"
+    persistent_static.mkdir(parents=True, exist_ok=True)
+    try:
+        import streamlit
+
+        candidate_sources = [
+            Path(streamlit.__file__).parent / "static",
+        ]
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            mei = Path(sys._MEIPASS)
+            candidate_sources.extend([
+                mei / "streamlit" / "static",
+                mei / "streamlit" / "static" / "static",
+                mei / "static",
+            ])
+
+        found_source = None
+        for cand in candidate_sources:
+            if cand.exists() and any(cand.iterdir()):
+                found_source = cand
+                break
+
+        if found_source:
+            for item in found_source.iterdir():
+                dest = persistent_static / item.name
+                if item.is_dir():
+                    shutil.copytree(item, dest, dirs_exist_ok=True)
+                else:
+                    if not dest.exists() or dest.stat().st_size != item.stat().st_size:
+                        shutil.copy2(item, dest)
+    except Exception:
+        pass
+
+    # Ensure index.html exists so Starlette never raises RuntimeError on empty dir
+    index_file = persistent_static / "index.html"
+    if not index_file.exists():
+        try:
+            index_file.write_text(
+                "<!DOCTYPE html><html><head><title>StackCheck</title></head><body><div id='root'></div></body></html>",
+                encoding="utf-8"
+            )
+        except Exception:
+            pass
+
+    return persistent_static
+
+
 def locate_target_script() -> Optional[str]:
     """
     Find the target Streamlit entrypoint app.py and ensure persistent availability.
@@ -206,6 +260,9 @@ gatherUsageStats = false
                     (cfg_dir / "config.toml").write_text(dark_cfg, encoding="utf-8")
                 except Exception:
                     pass
+
+            # Mirror Streamlit static assets for persistent daemon & offline survival
+            ensure_persistent_streamlit_static()
 
             return str(persistent_app)
         except Exception:
@@ -462,35 +519,20 @@ def launch(detach: bool = False):
     for logger_name in ["streamlit", "tornado", "urllib3", "watchdog"]:
         logging.getLogger(logger_name).setLevel(logging.WARNING)
 
-    # Ensure Streamlit static directory exists in sys._MEIPASS for Starlette static route handler
-    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-        import shutil
-        mei_path = Path(sys._MEIPASS)
-        target_static = mei_path / "streamlit" / "static"
-        if not target_static.exists():
-            candidates = [
-                mei_path / "streamlit" / "static" / "static",
-                mei_path / "static",
-            ]
-            found = None
-            for c in candidates:
-                if c.exists():
-                    found = c
-                    break
-            
-            target_static.mkdir(parents=True, exist_ok=True)
-            if found:
-                try:
-                    for item in found.iterdir():
-                        dest = target_static / item.name
-                        if item.is_dir() and not dest.exists():
-                            shutil.copytree(item, dest)
-                        elif item.is_file() and not dest.exists():
-                            shutil.copy2(item, dest)
-                except Exception:
-                    pass
-            if not (target_static / "index.html").exists():
-                (target_static / "index.html").touch(exist_ok=True)
+    # Ensure Streamlit static assets exist and Starlette static route handler uses persistent storage
+    try:
+        persistent_static = ensure_persistent_streamlit_static()
+        from streamlit import file_util
+        file_util.get_static_dir = lambda: str(persistent_static)
+
+        # Also ensure original package static directory exists if referenced anywhere
+        import streamlit
+        st_static_path = Path(streamlit.__file__).parent / "static"
+        st_static_path.mkdir(parents=True, exist_ok=True)
+        if not (st_static_path / "index.html").exists():
+            (st_static_path / "index.html").touch(exist_ok=True)
+    except Exception:
+        pass
 
     from streamlit import config
     from streamlit.web import bootstrap

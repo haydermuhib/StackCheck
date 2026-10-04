@@ -83,6 +83,13 @@ def build(onefile: bool = True):
         "--hidden-import=stackcheck.web.app",
         "--hidden-import=stackcheck.web.charts",
         "--hidden-import=streamlit.runtime.scriptrunner.magic_funcs",
+        "--exclude-module=matplotlib.tests",
+        "--exclude-module=pandas.core._numba",
+        "--exclude-module=tkinter",
+        "--exclude-module=PyQt5",
+        "--exclude-module=PyQt6",
+        "--exclude-module=PySide2",
+        "--exclude-module=PySide6",
         str(SRC_DIR / "stackcheck" / "cli.py")
     ]
 

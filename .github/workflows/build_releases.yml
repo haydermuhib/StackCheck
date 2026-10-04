@@ -92,16 +92,21 @@ jobs:
           "${{ matrix.dist_file }}" -d
 
           SERVER_OK=false
-          for i in {1..20}; do
-            if curl -fsSL -m 3 http://127.0.0.1:8501 > /dev/null 2>&1 || curl -fsSL -m 3 http://localhost:8501 > /dev/null 2>&1; then
+          for i in {1..25}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 3 http://127.0.0.1:8501 2>/dev/null)
+            if [ "$HTTP_CODE" != "200" ]; then
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 3 http://localhost:8501 2>/dev/null)
+            fi
+            if [ "$HTTP_CODE" = "200" ]; then
               SERVER_OK=true
+              echo "Server responded with HTTP $HTTP_CODE after ${i}s"
               break
             fi
             sleep 1
           done
 
           if [ "$SERVER_OK" != "true" ]; then
-            echo "❌ ERROR: Localhost web server failed to return HTTP 200 within 20s!"
+            echo "❌ ERROR: Localhost web server failed to return HTTP 200 within 25s! Last HTTP code: $HTTP_CODE"
             cat "$HOME/.stackcheck/stackcheck.log" 2>/dev/null || true
             "${{ matrix.dist_file }}" stop || true
             exit 1
