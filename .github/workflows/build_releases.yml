@@ -54,14 +54,39 @@ jobs:
         run: |
           python build_app.py
 
-      - name: Smoke Test Standalone Binary
+      - name: Binary Sanity & Size Verification
         shell: bash
         run: |
+          echo "=== 1. Checking Binary Existence & Size ==="
+          ls -lh "${{ matrix.dist_file }}"
+          FILESIZE=$(wc -c < "${{ matrix.dist_file }}" | tr -d ' ')
+          echo "Binary size: $FILESIZE bytes"
+          if [ "$FILESIZE" -lt 30000000 ]; then
+            echo "❌ ERROR: Executable is suspiciously small ($FILESIZE bytes). Packaging may have failed or truncated!"
+            exit 1
+          fi
+          echo "✔ Binary size sanity check passed ($FILESIZE bytes)."
+
+      - name: Binary Smoke & Runtime Sanity Test
+        shell: bash
+        run: |
+          echo "=== 2. Testing Execution & Runtime Environment ==="
           chmod +x "${{ matrix.dist_file }}" || true
-          "${{ matrix.dist_file }}" --version
+          
+          # 1. Version sanity check
+          VERSION_OUT=$("${{ matrix.dist_file }}" --version)
+          echo "$VERSION_OUT"
+          echo "$VERSION_OUT" | grep -E "StackCheck v[0-9]+" || { echo "❌ Version string sanity check failed"; exit 1; }
+
+          # 2. Help rendering sanity check
           "${{ matrix.dist_file }}" --help
+
+          # 3. Status command sanity check
           "${{ matrix.dist_file }}" status
+
+          # 4. Deep component check (NumPy, Pandas, Streamlit, Web App C-extensions)
           "${{ matrix.dist_file }}" check
+          echo "✔ All binary sanity checks passed cleanly!"
 
       - name: Rename Artifact for Release
         shell: bash
