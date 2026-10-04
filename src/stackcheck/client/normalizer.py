@@ -146,16 +146,51 @@ CANONICAL_LOCATIONS: Dict[str, str] = {
 }
 
 SUGGESTED_ROLES = [
+    # Data & Business Intelligence
     "Data Analyst",
+    "Data Scientist",
     "Data Engineer",
     "Analytics Engineer",
-    "Machine Learning Engineer",
-    "Backend Engineer",
-    "Frontend Developer",
-    "Full Stack Engineer",
     "Business Intelligence Developer",
     "Product Analyst",
+    "Database Administrator (DBA)",
+
+    # AI & Machine Learning
+    "Machine Learning Engineer",
+    "AI Engineer",
+    "Generative AI / LLM Engineer",
+    "Computer Vision Engineer",
+    "NLP Engineer",
+    "Research Scientist",
+
+    # Software Engineering & Development
+    "Full Stack Engineer",
+    "Backend Engineer",
+    "Frontend Developer",
+    "Software Engineer",
+    "Solutions Architect",
+    "Mobile Developer (iOS / Android)",
+    "iOS Developer",
+    "Android Developer",
+    "Embedded Systems Engineer",
+
+    # Cloud, DevOps & Infrastructure
     "DevOps Engineer",
+    "Site Reliability Engineer (SRE)",
+    "Cloud Architect",
+    "Cloud Engineer",
+    "Platform Engineer",
+    "Infrastructure Engineer",
+
+    # Cybersecurity
+    "Cybersecurity Engineer",
+    "Security Analyst",
+    "Information Security Architect",
+
+    # QA & Technical Leadership
+    "QA Automation Engineer",
+    "Technical Product Manager",
+    "Engineering Manager",
 ]
 
 SUGGESTED_LOCATIONS = [
