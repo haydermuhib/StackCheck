@@ -93,7 +93,7 @@ jobs:
 
           SERVER_OK=false
           for i in {1..20}; do
-            if curl -fsSL -m 3 http://127.0.0.1:8501 > /dev/null 2>&1; then
+            if curl -fsSL -m 3 http://127.0.0.1:8501 > /dev/null 2>&1 || curl -fsSL -m 3 http://localhost:8501 > /dev/null 2>&1; then
               SERVER_OK=true
               break
             fi
