@@ -9,15 +9,18 @@
 ```
 StackCheck/
 ├── app.py                      # 🚀 Top-level launcher: streamlit run app.py
+├── build_app.py                # 📦 Standalone PyInstaller desktop binary compiler
 ├── pyproject.toml              # Dependencies & build configuration
 ├── README.md                   # Project documentation & usage guide
 ├── PRESENTATION.md             # Technical methodology & slide deck
 ├── ARCHITECTURE.md             # Complete system architecture specification
-├── tests/                      # Automated Unit Test Suite (11 passing tests)
+├── tests/                      # Automated Unit Test Suite (27 passing tests)
 │   ├── test_analyzer.py        # Tests for segmentation, weighting & metrics
 │   ├── test_client.py          # Tests for client parsing & location normalizer
-│   ├── test_storage.py         # Tests for SQLite repository & exporters
-│   └── test_web.py             # Tests for Pandas conversions & Matplotlib charts
+│   ├── test_storage.py         # Tests for SQLite repository, projects & isolation
+│   ├── test_web.py             # Tests for Pandas conversions & Matplotlib charts
+│   ├── test_cli.py             # Tests for Rich CLI commands, flags & outputs
+│   └── test_launcher.py        # Tests for instance tracking, script sync & env sanitization
 └── src/stackcheck/
     ├── client/                 # 🌐 Real-World Data Ingestion Layer
     │   ├── hiringcafe.py       # Live scraper (curl_cffi, zero mock data)
@@ -28,16 +31,18 @@ StackCheck/
     │   ├── llm_extractor.py    # Optional Gemini / OpenAI enrichment
     │   └── metrics.py          # Co-occurrence, salary stats & Pandas DataFrames
     ├── storage/                # 💾 Storage & Export Layer
-    │   ├── db.py               # SQLite schema (search runs, jobs, skills)
-    │   ├── repository.py       # CRUD data access layer
+    │   ├── db.py               # SQLite schema (projects, search runs, jobs, skills)
+    │   ├── repository.py       # Project-scoped CRUD data access layer
     │   ├── sync.py             # Community benchmark aggregator
     │   └── exporters.py        # CSV, JSON, and Markdown report exporters
     ├── web/                    # 📊 Streamlit Web Dashboard Layer
-    │   ├── app.py              # 4-Tab interactive web analytics dashboard
+    │   ├── app.py              # Interactive web analytics dashboard (project-aware)
     │   └── charts.py           # Matplotlib OOP API (fig, ax) & Seaborn heatmaps
     ├── models.py               # Pydantic data schemas
-    ├── config.py               # Configuration & paths
-    └── cli.py                  # CLI commands & web launcher
+    ├── config.py               # Central workspace paths (~/.stackcheck/)
+    ├── launcher.py             # Programmatic Streamlit bootloader & lifecycle engine
+    ├── updater.py              # In-place auto-updater from GitHub Releases
+    └── cli.py                  # Rich CLI interface with detached daemon support
 ```
 
 ---
@@ -135,11 +140,12 @@ flowchart TD
 ---
 
 ### 💾 Layer 3: Persistence & Exporters (`src/stackcheck/storage/`)
-- **`db.py` (`Database`)**:
-  - Embedded SQLite database (`stackcheck.db`) with relational tables: `search_runs`, `jobs`, and `extracted_skills`.
-  - Indexed on `search_run_id`, `canonical_name`, `company`, `region`, and `workplace_type`.
+- **`db.py` (`DatabaseManager`)**:
+  - Embedded SQLite database located centrally at `~/.stackcheck/stackcheck.db`.
+  - Deterministic connection lifecycle using `@contextmanager` to prevent file locking and connection leaks.
+  - Multi-project isolation support via foreign keys (`project_id`) across `search_runs` and `jobs`.
 - **`repository.py` (`JobRepository`)**:
-  - Data Access Object (DAO) providing atomic save, query, search run logging, and cached job retrieval.
+  - Data Access Object (DAO) providing atomic save, query, project CRUD, search run logging, and cached job retrieval.
 - **`sync.py` (`CommunitySyncClient`)**:
   - Local aggregation engine tracking real data distributions.
 - **`exporters.py` (`ReportExporter`)**:
@@ -160,21 +166,60 @@ flowchart TD
     - **`plot_category_breakdown()`**: Domain comparison bar chart.
 - **`app.py`**:
   - 4-tab Streamlit dashboard:
-    1. **📊 Executive Market Dashboard**: KPI metric cards, top skills chart with weighted score toggle, category breakdown.
+    1. **📊 Executive Market Dashboard**: KPI metric cards, top skills chart with weighted score toggle, category breakdown, and project switcher.
     2. **📈 Deep Statistical Analytics**: Co-occurrence heatmap, salary error-bars, workplace & experience distributions, regional partition table.
     3. **💼 Interactive Job Explorer**: Interactive Pandas DataFrame with text filter, skill dropdown, and expandable section breakdown cards.
     4. **🚀 Future Roadmap & Data Export**: Clean upcoming roadmap notice and 1-click download buttons for JSON, CSV, and Markdown.
 
 ---
 
-## 4. 🗄️ SQLite Database Schema
+### 🚀 Layer 5: Desktop Launcher & Workspace Engine (`src/stackcheck/launcher.py`, `cli.py`, `updater.py`)
+- **`launcher.py`**:
+  - Programmatically boots the local Streamlit engine without requiring a system `streamlit` CLI installation.
+  - **Single-Instance Enforcement**: Reads and verifies PID from `~/.stackcheck/stackcheck.pid` and port availability; if an instance is already active, focuses the existing browser tab instead of spawning redundant server processes.
+  - **Readiness Health Check**: Polls TCP connection availability (`is_port_listening`) before launching the system browser, preventing initial "connection refused" white-screens.
+  - **Detached Daemon Mode (`-d`)**: Spawns detached background processes with sanitized child environments (stripping PyInstaller `_MEIPASS2` to preserve independent lifecycle).
+  - **Deterministic Web App Sync**: Automatically extracts and synchronizes `app.py`, `charts.py`, and assets to `~/.stackcheck/web/` so Streamlit entrypoint files are immune to `/tmp` cleanup when parent CLI processes exit.
+- **`cli.py`**:
+  - Production-grade Click CLI styled with Rich panels, spinners, and tables.
+  - Commands: `stackcheck` (web dashboard), `stackcheck status`, `stackcheck stop`, `stackcheck update`, `stackcheck search`, `stackcheck analyze`, `stackcheck export`, `stackcheck projects`, and `stackcheck sync`.
+- **`updater.py`**:
+  - In-place auto-updater connecting to GitHub Releases API.
+  - Detects current platform/architecture binary, streams downloads with rich progress bars, and replaces the running binary with executable permissions.
 
+---
+
+## 4. 🗄️ SQLite Database Schema & Workspace Storage
+
+### Central Workspace Layout (`~/.stackcheck/`)
+All execution methods (`uv run stackcheck`, local standalone `./dist/StackCheck`, and downloaded release binary) unify around the user data workspace:
+- `~/.stackcheck/stackcheck.db`: Central SQLite database with multi-project isolation.
+- `~/.stackcheck/stackcheck.pid`: Active server process PID.
+- `~/.stackcheck/stackcheck.json`: Live port, URL, and start timestamp metadata.
+- `~/.stackcheck/stackcheck.log`: Detached background daemon logs.
+- `~/.stackcheck/web/`: Synchronized Streamlit application runtime (`app.py`, `charts.py`).
+- `~/.stackcheck/assets/`: Embedded brand icons and logos.
+- `~/.stackcheck/exports/`: Exported JSON, CSV, and Markdown briefs.
+
+### Relational Schema Diagram
 ```
+┌─────────────────────────────────┐
+│            projects             │
+├─────────────────────────────────┤
+│ id           TEXT PRIMARY KEY   │
+│ name         TEXT NOT NULL      │
+│ description  TEXT               │
+│ created_at   DATETIME           │
+└─────────────────────────────────┘
+          │ 1               │ 1
+          │                 │
+          │ *               │ *
 ┌─────────────────────────────────┐       ┌─────────────────────────────────┐
 │          search_runs            │       │              jobs               │
 ├─────────────────────────────────┼───────┼─────────────────────────────────┤
 │ id           INTEGER PK AUTOINC │ 1   * │ id           TEXT PRIMARY KEY   │
-│ query_str    TEXT NOT NULL      │───────│ search_run_id INTEGER FK        │
+│ project_id   TEXT FK            │───────│ project_id   TEXT FK            │
+│ query_str    TEXT NOT NULL      │       │ search_run_id INTEGER FK        │
 │ location     TEXT               │       │ title        TEXT NOT NULL      │
 │ workplace    TEXT               │       │ company      TEXT NOT NULL      │
 │ experience   TEXT               │       │ location     TEXT               │
@@ -220,33 +265,77 @@ flowchart TD
 
 ## 6. 🧪 Test Suite & Verification
 
-The test suite validates data ingestion, parsing, weighting, SQLite operations, DataFrame conversions, and Matplotlib figure rendering:
+The automated test suite contains **27 tests** across 6 modules validating data ingestion, parsing, weighting, SQLite operations, multi-project isolation, DataFrame conversions, Matplotlib figure rendering, CLI commands, and launcher lifecycle management:
 
 ```bash
 # Run the complete test suite
-./.venv/bin/pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
-```
+```text
 tests/test_analyzer.py::test_segment_job_description PASSED
 tests/test_analyzer.py::test_rule_extractor_positional_weighting PASSED
 tests/test_analyzer.py::test_job_normalizer PASSED
 tests/test_analyzer.py::test_metrics_engine_aggregation PASSED
+tests/test_cli.py::test_cli_help PASSED
+tests/test_cli.py::test_cli_version PASSED
+tests/test_cli.py::test_cli_web_detach_flag PASSED
+tests/test_cli.py::test_cli_status PASSED
+tests/test_cli.py::test_cli_search_empty PASSED
+tests/test_cli.py::test_cli_analyze_empty PASSED
+tests/test_cli.py::test_cli_projects_crud PASSED
 tests/test_client.py::test_hiringcafe_client_structure PASSED
 tests/test_client.py::test_hiringcafe_job_parsing PASSED
 tests/test_client.py::test_location_normalization PASSED
+tests/test_launcher.py::test_find_free_port PASSED
+tests/test_launcher.py::test_updater_check_offline_or_invalid PASSED
+tests/test_launcher.py::test_is_port_listening_unused_port PASSED
+tests/test_launcher.py::test_instance_tracking_and_cleanup PASSED
+tests/test_launcher.py::test_locate_target_script_and_persistent_sync PASSED
+tests/test_launcher.py::test_detached_env_sanitization PASSED
 tests/test_storage.py::test_repository_save_and_retrieve PASSED
 tests/test_storage.py::test_exporters PASSED
+tests/test_storage.py::test_project_isolation_and_crud PASSED
+tests/test_storage.py::test_duplicate_detection_and_apply_urls PASSED
+tests/test_storage.py::test_isolated_db_file_access PASSED
 tests/test_web.py::test_dataframe_conversions PASSED
 tests/test_web.py::test_charts_generation PASSED
+
+============================== 27 passed in 2.35s ==============================
 ```
 
 ---
 
-## 7. 🚀 Execution
+## 7. 🚀 Execution & Distribution
 
-To start the application:
+StackCheck provides unified execution patterns that all share the centralized user workspace (`~/.stackcheck/`):
+
+### 1. Development Mode (Source Scripts)
 ```bash
-streamlit run app.py
+# Run the interactive Streamlit dashboard via uv
+uv run stackcheck
+
+# Run as background service
+uv run stackcheck -d
+
+# Direct Streamlit launcher
+uv run streamlit run app.py
 ```
-*(or via CLI: `stackcheck web`)*
+
+### 2. Standalone Desktop Binary (PyInstaller)
+```bash
+# Compile standalone desktop executable
+uv run python build_app.py --onefile
+
+# Run compiled binary directly (zero Python dependencies required)
+./dist/StackCheck
+
+# Run detached background service
+./dist/StackCheck -d
+
+# Check service health & uptime
+./dist/StackCheck status
+
+# Terminate running server
+./dist/StackCheck stop
+```
