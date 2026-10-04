@@ -117,6 +117,7 @@ def check():
         ("Streamlit Web Runtime", "import streamlit as st; _ = st.__version__"),
         ("Altair Visualization", "import altair as alt; _ = alt.__version__"),
         ("Matplotlib & Seaborn", "import matplotlib, seaborn; _ = matplotlib.__version__"),
+        ("Streamlit Static Frontend Assets", "from pathlib import Path; import streamlit; p = Path(streamlit.__file__).parent / 'static'; assert p.exists(), f'Static dir missing at {p}'"),
         ("Web Dashboard Entrypoint", "import stackcheck.web.app"),
         ("Web Charts Engine", "import stackcheck.web.charts"),
     ]

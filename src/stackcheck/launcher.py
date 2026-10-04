@@ -462,6 +462,36 @@ def launch(detach: bool = False):
     for logger_name in ["streamlit", "tornado", "urllib3", "watchdog"]:
         logging.getLogger(logger_name).setLevel(logging.WARNING)
 
+    # Ensure Streamlit static directory exists in sys._MEIPASS for Starlette static route handler
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        import shutil
+        mei_path = Path(sys._MEIPASS)
+        target_static = mei_path / "streamlit" / "static"
+        if not target_static.exists():
+            candidates = [
+                mei_path / "streamlit" / "static" / "static",
+                mei_path / "static",
+            ]
+            found = None
+            for c in candidates:
+                if c.exists():
+                    found = c
+                    break
+            
+            target_static.mkdir(parents=True, exist_ok=True)
+            if found:
+                try:
+                    for item in found.iterdir():
+                        dest = target_static / item.name
+                        if item.is_dir() and not dest.exists():
+                            shutil.copytree(item, dest)
+                        elif item.is_file() and not dest.exists():
+                            shutil.copy2(item, dest)
+                except Exception:
+                    pass
+            if not (target_static / "index.html").exists():
+                (target_static / "index.html").touch(exist_ok=True)
+
     from streamlit import config
     from streamlit.web import bootstrap
 

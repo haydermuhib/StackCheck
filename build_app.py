@@ -58,6 +58,7 @@ def build(onefile: bool = True):
         "--onefile" if onefile else "--onedir",
         f"--add-data={SRC_DIR / 'stackcheck'}{sep}stackcheck",
         f"--add-data={static_dir}{sep}streamlit/static",
+        f"--add-data={static_dir}{sep}streamlit",
         f"--add-data={ASSETS_DIR}{sep}assets",
         "--collect-all=streamlit",
         "--collect-all=altair",
