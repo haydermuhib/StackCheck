@@ -993,10 +993,18 @@
           <tbody>
             <tr>
               <td><code>stackcheck</code></td>
-              <td>Launch local browser dashboard at <code>http://localhost:8501</code></td>
+              <td>Launch local browser dashboard at <code>http://localhost:8501</code> (auto-focuses if already open)</td>
             </tr>
             <tr>
-              <td><code>stackcheck scrape "Data Engineer" --location Pakistan</code></td>
+              <td><code>stackcheck status</code></td>
+              <td>Check if local dashboard server is currently active and listening</td>
+            </tr>
+            <tr>
+              <td><code>stackcheck stop</code></td>
+              <td>Safely shut down background server process and release port</td>
+            </tr>
+            <tr>
+              <td><code>stackcheck search "Data Analyst" --location Pakistan</code></td>
               <td>Scrape live job postings and store in active SQLite workspace</td>
             </tr>
             <tr>
@@ -1005,7 +1013,7 @@
             </tr>
             <tr>
               <td><code>stackcheck update</code></td>
-              <td>Check GitHub Releases API and update binary in place</td>
+              <td>Check GitHub Releases API and upgrade binary in place with visual progress</td>
             </tr>
           </tbody>
         </table>
