@@ -216,7 +216,7 @@ StackCheck runs a local web application built with Streamlit, Matplotlib, and Se
 ### Standalone Executable
 Standalone binaries require no Python installation:
 - **macOS / Linux:** `curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash`
-- **Windows (PowerShell):** `irm https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe -OutFile StackCheck.exe; .\StackCheck.exe`
+- **Windows (PowerShell):** `curl.exe -L "https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe" -o StackCheck.exe; .\StackCheck.exe`
 
 ---
 

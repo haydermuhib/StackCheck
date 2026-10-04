@@ -28,9 +28,9 @@ curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install
 
 ### 🪟 Windows (PowerShell)
 ```powershell
-irm https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe -OutFile StackCheck.exe; .\StackCheck.exe
+curl.exe -L "https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe" -o StackCheck.exe; .\StackCheck.exe
 ```
-> **Tip for Windows:** You can also directly download and run [**StackCheck-windows-x64.exe**](https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe) from GitHub Releases with zero installation.
+> **Tip for Windows:** You can also directly download and run [**StackCheck-windows-x64.exe**](https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe) from GitHub Releases. If Windows SmartScreen prompts on first launch, click **More info** &rarr; **Run anyway**.
 
 ---
 

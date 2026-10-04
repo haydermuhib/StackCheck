@@ -770,7 +770,7 @@
         <button class="btn-copy" onclick="copyInstallCmd()" id="copy-btn">Copy Command</button>
       </div>
       <p class="install-fallback-note" id="win-download-note" style="display: none; margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">
-        💡 Or download the standalone executable: <a href="https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe" style="color: var(--accent-cyan); text-decoration: underline;">StackCheck-windows-x64.exe</a>
+        💡 Or download the standalone executable: <a href="https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe" style="color: var(--accent-cyan); text-decoration: underline;">StackCheck-windows-x64.exe</a>. If SmartScreen appears, click <em>More info</em> &rarr; <em>Run anyway</em>.
       </p>
     </header>
 
@@ -1098,7 +1098,7 @@ python build_app.py --onefile</pre>
   <script>
     const installCommands = {
       nix: 'curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash',
-      win: 'irm https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe -OutFile StackCheck.exe; .\\StackCheck.exe'
+      win: 'curl.exe -L "https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe" -o StackCheck.exe; .\\StackCheck.exe'
     };
 
     function switchOs(os) {
