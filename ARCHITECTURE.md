@@ -1,6 +1,6 @@
-# 🏛️ StackCheck — System Architecture & Technical Specification
+# StackCheck: System Architecture & Technical Specification
 
-> **A Modular, High-Performance Tech Stack Market Intelligence Engine & Data Analytics Platform**
+> System architecture, data pipeline, and technical specification for StackCheck.
 
 ---
 
@@ -168,7 +168,7 @@ flowchart TD
   - Built strictly using **Matplotlib's Object-Oriented API (`fig, ax = plt.subplots(...)`)** and **Seaborn**:
     - **`plot_top_skills()`**: Horizontal bar chart with direct percentage text labels, dynamic limits, and clean spine removal (`sns.despine`).
     - **`plot_co_occurrence_heatmap()`**: Correlation matrix heatmap (`sns.heatmap`) with annotated frequencies and color gradients.
-    - **`plot_salary_by_tech()`**: Grouped salary error-bar chart showcasing Min, Avg, and Max compensation with currency tick formatting.
+    - **`plot_salary_by_tech()`**: Grouped salary error-bar chart displaying Min, Avg, and Max compensation with currency tick formatting.
     - **`plot_distributions()`**: Donut charts for workplace mode and bar plots for experience level.
     - **`plot_category_breakdown()`**: Domain comparison bar chart.
 - **`app.py`**:

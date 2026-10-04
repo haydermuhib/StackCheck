@@ -43,7 +43,7 @@ stackcheck
 
 ## 📋 Overview
 
-StackCheck is an automated job scraper, section-aware skill extractor, and interactive analytics dashboard built for data analysts, software engineers, and hiring managers. Inspired by data-driven hiring research across 22,000+ job ads in ~100 countries, StackCheck parses live job postings from **HiringCafe**, extracts demanded technologies with section-positional priority weighting, groups them into canonical categories, compares geographic markets, and renders interactive statistical visualizations with **Pandas**, **Matplotlib (OOP API: `fig, ax`)**, and **Seaborn**.
+StackCheck collects live job postings from HiringCafe, extracts requested technologies with section-aware priority weighting, and displays market data in an interactive Streamlit dashboard. It helps engineers and analysts evaluate current technology demand, examine skill combinations, and compare compensation benchmarks across regional job markets.
 
 ---
 
