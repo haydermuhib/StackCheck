@@ -3,11 +3,17 @@ Streamlit Web Dashboard for StackCheck.
 Unified Tech Stack Intelligence Engine & Data Analytics Interface.
 """
 
-import streamlit as st
-import pandas as pd
+import os
+import signal
+import time
 import json
 from pathlib import Path
+import streamlit as st
+import pandas as pd
 
+from stackcheck import __version__
+from stackcheck.updater import UpdateChecker
+from stackcheck.launcher import stop_running_instance, get_running_instance
 from stackcheck.models import SearchQuery, WorkplaceType, ExperienceLevel, Region, Project
 from stackcheck.client.hiringcafe import HiringCafeClient
 from stackcheck.client.normalizer import SUGGESTED_ROLES, SUGGESTED_LOCATIONS, JobNormalizer
@@ -256,6 +262,77 @@ def main():
             st.session_state.jobs = []
             st.session_state.stats = MetricsEngine.aggregate([], query_keywords="Cleared")
             st.rerun()
+
+        # ----------------- SYSTEM & SERVER MANAGEMENT -----------------
+        st.markdown("---")
+        with st.expander("⚙️ Server & Updates", expanded=False):
+            info = get_running_instance()
+            if info:
+                st.caption(f"🟢 **Status:** Active on port `{info.get('port', 8501)}` (PID `{info.get('pid')}`)")
+            else:
+                st.caption("🟢 **Status:** Active (In-Process)")
+
+            # Clean Server Stop / Shutdown Button
+            if st.button("🛑 Stop Server & Release Port", type="secondary", use_container_width=True):
+                st.warning("Shutting down StackCheck server...")
+                time.sleep(0.4)
+                stop_running_instance()
+                try:
+                    os.kill(os.getpid(), signal.SIGTERM)
+                except OSError:
+                    pass
+                st.info("StackCheck server has stopped. You can safely close this browser tab.")
+                st.stop()
+
+            st.markdown("---")
+            st.caption(f"**Installed Version:** `v{__version__}`")
+            if "update_info" not in st.session_state:
+                st.session_state.update_info = None
+
+            if st.button("🔄 Check for Updates", use_container_width=True):
+                with st.spinner("Checking GitHub for newer releases..."):
+                    res = UpdateChecker.check_for_update()
+                    st.session_state.update_info = res
+                    if res and res.get("has_update"):
+                        st.session_state.update_msg = f"✨ New version **v{res['latest_version']}** available!"
+                    else:
+                        st.session_state.update_msg = f"✔ StackCheck is up to date (v{__version__})."
+
+            if st.session_state.get("update_msg"):
+                st.info(st.session_state.update_msg)
+
+            up_info = st.session_state.get("update_info")
+            if up_info and up_info.get("has_update"):
+                target_asset = up_info.get("target_asset")
+                if target_asset and target_asset.get("download_url"):
+                    if st.button(f"⬇️ Download & Update to v{up_info['latest_version']}", type="primary", use_container_width=True):
+                        prog_bar = st.progress(0)
+                        status_lbl = st.empty()
+                        status_lbl.text(f"Downloading {target_asset['name']}...")
+
+                        target_path = UpdateChecker.get_install_target_path()
+                        downloaded_bytes = [0]
+
+                        def on_progress(chunk_len, total_len):
+                            downloaded_bytes[0] += chunk_len
+                            if total_len > 0:
+                                pct = min(100, int((downloaded_bytes[0] / total_len) * 100))
+                                prog_bar.progress(pct)
+                                mb_done = downloaded_bytes[0] / (1024 * 1024)
+                                mb_total = total_len / (1024 * 1024)
+                                status_lbl.text(f"Downloading: {mb_done:.1f} MB / {mb_total:.1f} MB ({pct}%)")
+
+                        try:
+                            UpdateChecker.download_asset(
+                                download_url=target_asset["download_url"],
+                                dest_path=target_path,
+                                progress_callback=on_progress
+                            )
+                            prog_bar.progress(100)
+                            status_lbl.empty()
+                            st.success(f"🎉 Updated to v{up_info['latest_version']}! Please restart StackCheck to apply.")
+                        except Exception as e:
+                            st.error(f"Update failed: {e}")
 
     # ----------------- MAIN TABS -----------------
     tab_dash, tab_analytics, tab_jobs = st.tabs([

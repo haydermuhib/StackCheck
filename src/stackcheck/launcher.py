@@ -1,15 +1,20 @@
 """
 Standalone Launcher for StackCheck Desktop & CLI.
-Boots the local Streamlit engine programmatically and automatically opens the user's browser.
+Boots the local Streamlit engine programmatically, prevents duplicate port spawning,
+waits for verified health checks before opening the browser, and manages instance lifecycles.
 """
 
 import sys
 import os
 import time
+import json
 import socket
+import atexit
+import signal
 import threading
 import webbrowser
 from pathlib import Path
+from typing import Optional, Dict, Any
 
 # Fix sys._MEIPASS for PyInstaller one-file bundles
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
@@ -17,8 +22,98 @@ if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
 else:
     BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+STACKCHECK_DIR = Path.home() / ".stackcheck"
+PID_FILE = STACKCHECK_DIR / "stackcheck.pid"
+INFO_FILE = STACKCHECK_DIR / "stackcheck.json"
 
-def find_free_port(start_port: int = 8501, max_attempts: int = 20) -> int:
+
+def is_port_listening(port: int, host: str = "127.0.0.1") -> bool:
+    """Check if a TCP port is currently accepting connections."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.4)
+        try:
+            return s.connect_ex((host, port)) == 0
+        except OSError:
+            return False
+
+
+def get_running_instance() -> Optional[Dict[str, Any]]:
+    """
+    Check if a StackCheck server instance is currently alive and responding.
+    Returns metadata dict if running, else cleans up stale pid files and returns None.
+    """
+    if not INFO_FILE.exists():
+        return None
+
+    try:
+        with open(INFO_FILE, "r") as f:
+            data = json.load(f)
+        pid = data.get("pid")
+        port = data.get("port", 8501)
+
+        # Check if process is still alive
+        is_alive = False
+        if pid:
+            try:
+                os.kill(pid, 0)
+                is_alive = True
+            except OSError:
+                is_alive = False
+
+        # If process is alive and port is accepting connections, instance is active
+        if is_alive and is_port_listening(port):
+            return data
+        elif not is_alive and not is_port_listening(port):
+            cleanup_instance_files()
+    except Exception:
+        cleanup_instance_files()
+
+    return None
+
+
+def cleanup_instance_files():
+    """Remove PID and info metadata files."""
+    try:
+        if PID_FILE.exists():
+            PID_FILE.unlink()
+        if INFO_FILE.exists():
+            INFO_FILE.unlink()
+    except OSError:
+        pass
+
+
+def stop_running_instance() -> bool:
+    """Stop any active StackCheck server instance and release the port."""
+    info = get_running_instance()
+    if not info:
+        # Also check fallback if pid file was missing but port 8501 is occupied
+        cleanup_instance_files()
+        return False
+
+    pid = info.get("pid")
+    port = info.get("port")
+    if pid:
+        try:
+            os.kill(pid, signal.SIGTERM)
+            # Give it up to 2 seconds to release port
+            for _ in range(20):
+                time.sleep(0.1)
+                if not is_port_listening(port):
+                    break
+            else:
+                # Force kill if still hung
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
+        except OSError:
+            pass
+
+    cleanup_instance_files()
+    return True
+
+
+def find_free_port(start_port: int = 8501, max_attempts: int = 15) -> int:
     """Find an available port starting from start_port."""
     for port in range(start_port, start_port + max_attempts):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -30,11 +125,24 @@ def find_free_port(start_port: int = 8501, max_attempts: int = 20) -> int:
     return start_port
 
 
-def open_browser_delayed(url: str, delay: float = 1.2):
-    """Open default web browser after server initializes."""
+def wait_for_server_and_open_browser(url: str, port: int, timeout: float = 15.0):
+    """
+    Poll until server is verifiably accepting TCP connections, then open browser.
+    Prevents 'connection refused' or 'not found' errors on slower machines.
+    """
     def _worker():
-        time.sleep(delay)
+        start_t = time.time()
+        ready = False
+        while time.time() - start_t < timeout:
+            if is_port_listening(port):
+                ready = True
+                break
+            time.sleep(0.2)
+
+        # Brief pause to let Streamlit HTTP routes settle
+        time.sleep(0.4)
         webbrowser.open(url)
+
     t = threading.Thread(target=_worker, daemon=True)
     t.start()
 
@@ -43,7 +151,19 @@ def launch():
     """Main launcher entrypoint."""
     from streamlit.web import bootstrap
 
-    # Locate the target app.py
+    # 1. Single-instance check: If already running, focus browser instead of spawning duplicate
+    running = get_running_instance()
+    if running:
+        existing_url = running.get("url", f"http://localhost:{running.get('port', 8501)}")
+        print("=" * 60)
+        print("  ℹ️ StackCheck is already running!")
+        print(f"  🌐 URL: {existing_url} (PID: {running.get('pid')})")
+        print("  🚀 Opening existing dashboard in your browser...")
+        print("=" * 60)
+        webbrowser.open(existing_url)
+        return
+
+    # 2. Locate target app.py
     candidate_paths = [
         BASE_DIR / "src" / "stackcheck" / "web" / "app.py",
         BASE_DIR / "stackcheck" / "web" / "app.py",
@@ -64,13 +184,31 @@ def launch():
     port = find_free_port(8501)
     app_url = f"http://localhost:{port}"
 
+    # 3. Record PID and port info
+    STACKCHECK_DIR.mkdir(parents=True, exist_ok=True)
+    my_pid = os.getpid()
+    with open(PID_FILE, "w") as f:
+        f.write(str(my_pid))
+
+    with open(INFO_FILE, "w") as f:
+        json.dump({
+            "pid": my_pid,
+            "port": port,
+            "url": app_url,
+            "start_time": time.time()
+        }, f)
+
+    atexit.register(cleanup_instance_files)
+
     print("=" * 60)
     print("  🚀 Starting StackCheck Desktop Intelligence Engine...")
     print(f"  🌐 Local Dashboard: {app_url}")
+    print(f"  🆔 Process PID:     {my_pid}")
+    print("  💡 Tip: Run 'stackcheck stop' to stop this server anytime.")
     print("=" * 60)
 
-    # Automatically open browser in background
-    open_browser_delayed(app_url, delay=1.5)
+    # 4. Wait for server readiness probe before opening browser
+    wait_for_server_and_open_browser(app_url, port=port, timeout=12.0)
 
     flag_options = {
         "server_port": port,
@@ -81,12 +219,15 @@ def launch():
         "global_developmentMode": False
     }
 
-    bootstrap.run(
-        target_script,
-        is_hello=False,
-        args=[],
-        flag_options=flag_options
-    )
+    try:
+        bootstrap.run(
+            target_script,
+            is_hello=False,
+            args=[],
+            flag_options=flag_options
+        )
+    finally:
+        cleanup_instance_files()
 
 
 if __name__ == "__main__":

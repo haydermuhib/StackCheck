@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # StackCheck - Tech Stack Market Intelligence Engine
-# Universal 1-line portable installer script
+# Pixi-Grade Universal Portable Installer
 # Usage: curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash
 
 set -e
@@ -9,19 +9,53 @@ REPO_OWNER="${REPO_OWNER:-haydermuhib}"
 REPO_NAME="StackCheck"
 BINARY_NAME="stackcheck"
 
-# Colors
-GREEN='\033[0;32m'
-CYAN='\033[1;36m'
-PURPLE='\033[1;35m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# Terminal Formatting & Colors
+BOLD='\033[1m'
+DIM='\033[2m'
+GREEN='\033[38;2;52;211;153m'
+CYAN='\033[38;2;56;189;248m'
+BLUE='\033[38;2;99;102;241m'
+PURPLE='\033[38;2;168;85;247m'
+YELLOW='\033[38;2;251;191;36m'
+RED='\033[38;2;248;113;113m'
+RESET='\033[0m'
 
-echo -e "${CYAN}====================================================${NC}"
-echo -e "${CYAN}        📊 StackCheck Portable Installer            ${NC}"
-echo -e "${CYAN}====================================================${NC}"
+clear_line() {
+    printf "\r\033[K"
+}
 
-# 1. Detect Operating System
+step_header() {
+    local step="$1"
+    local title="$2"
+    printf "${CYAN}${BOLD}[%s]${RESET} ${BOLD}%s${RESET}\n" "$step" "$title"
+}
+
+step_item() {
+    local message="$1"
+    printf "  ${GREEN}✔${RESET} %s\n" "$message"
+}
+
+step_warn() {
+    local message="$1"
+    printf "  ${YELLOW}⚠${RESET} %s\n" "$message"
+}
+
+step_error() {
+    local message="$1"
+    printf "  ${RED}✖${RESET} %s\n" "$message"
+}
+
+echo -e ""
+echo -e "${CYAN}${BOLD}  ┌──────────────────────────────────────────────────────────┐${RESET}"
+echo -e "${CYAN}${BOLD}  │${RESET}   ${BOLD}📊 StackCheck${RESET} — ${DIM}Tech Stack Intelligence Engine & App${RESET}   ${CYAN}${BOLD}│${RESET}"
+echo -e "${CYAN}${BOLD}  └──────────────────────────────────────────────────────────┘${RESET}"
+echo -e ""
+
+# -------------------------------------------------------------
+# STEP 1: Detect Platform & Architecture
+# -------------------------------------------------------------
+step_header "1/4" "Detecting system platform..."
+
 OS="$(uname -s)"
 case "$OS" in
     Linux)
@@ -31,14 +65,13 @@ case "$OS" in
         OS_TYPE="macos"
         ;;
     *)
-        echo -e "${RED}Error: Unsupported operating system: $OS${NC}"
+        step_error "Unsupported operating system: $OS"
         echo -e "StackCheck supports Linux and macOS via this installer."
         echo -e "For Windows, download StackCheck-windows-x64.exe from GitHub Releases."
         exit 1
         ;;
 esac
 
-# 2. Detect CPU Architecture
 ARCH="$(uname -m)"
 case "$ARCH" in
     x86_64|amd64)
@@ -48,14 +81,18 @@ case "$ARCH" in
         TARGET_ARCH="arm64"
         ;;
     *)
-        echo -e "${RED}Error: Unsupported architecture: $ARCH${NC}"
+        step_error "Unsupported CPU architecture: $ARCH"
         exit 1
         ;;
 esac
 
-echo -e "Detected platform: ${GREEN}$OS_TYPE ($TARGET_ARCH)${NC}"
+step_item "Platform verified: ${BOLD}${OS_TYPE} (${TARGET_ARCH})${RESET}"
 
-# 3. Determine Installation Directories
+# -------------------------------------------------------------
+# STEP 2: Configure Target Directories
+# -------------------------------------------------------------
+step_header "2/4" "Setting up installation directories..."
+
 if [ "$EUID" -eq 0 ]; then
     INSTALL_DIR="/usr/local/bin"
     APPS_DIR="/usr/local/share/applications"
@@ -75,53 +112,70 @@ if [ "$OS_TYPE" = "linux" ]; then
     mkdir -p "$PIXMAPS_DIR"
 fi
 
-# 4. Check Download Tools
+step_item "Target directory: ${DIM}${INSTALL_DIR}${RESET}"
+
+# -------------------------------------------------------------
+# STEP 3: Download Binary with Active Progress Bar
+# -------------------------------------------------------------
+step_header "3/4" "Downloading release binary from GitHub..."
+
 DOWNLOADER=""
 if command -v curl >/dev/null 2>&1; then
     DOWNLOADER="curl"
 elif command -v wget >/dev/null 2>&1; then
     DOWNLOADER="wget"
 else
-    echo -e "${RED}Error: neither curl nor wget was found. Please install curl or wget.${NC}"
+    step_error "Neither curl nor wget was found. Please install curl or wget."
     exit 1
 fi
 
-# 5. Fetch and Download Release Binary
 ARTIFACT_NAME="StackCheck-${OS_TYPE}-${TARGET_ARCH}"
+if [ "$OS_TYPE" = "windows" ]; then
+    ARTIFACT_NAME="${ARTIFACT_NAME}.exe"
+fi
+
 RELEASE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${ARTIFACT_NAME}"
 FALLBACK_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/StackCheck"
 
 TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
-INSTALLED_SUCCESS=0
+echo -e "  ${DIM}Fetching: ${ARTIFACT_NAME} (~140MB standalone bundle)${RESET}"
 
-echo -e "Fetching latest release binary: ${CYAN}${ARTIFACT_NAME}${NC}..."
-
-download_file() {
+download_with_progress() {
     local url="$1"
     local dest="$2"
     if [ "$DOWNLOADER" = "curl" ]; then
-        curl -fsSL -o "$dest" "$url" 2>/dev/null
+        # curl -# provides in-place terminal progress bar
+        if [ -t 1 ]; then
+            curl -# -f -L -o "$dest" "$url"
+        else
+            curl -sSL -f -o "$dest" "$url"
+        fi
     else
-        wget -q -O "$dest" "$url" 2>/dev/null
+        if [ -t 1 ]; then
+            wget --show-progress -q -O "$dest" "$url"
+        else
+            wget -q -O "$dest" "$url"
+        fi
     fi
 }
 
-if download_file "$RELEASE_URL" "$TEMP_DIR/$BINARY_NAME"; then
+INSTALLED_SUCCESS=0
+
+if download_with_progress "$RELEASE_URL" "$TEMP_DIR/$BINARY_NAME"; then
     mv "$TEMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
     chmod +x "$INSTALL_DIR/$BINARY_NAME"
     INSTALLED_SUCCESS=1
-elif download_file "$FALLBACK_URL" "$TEMP_DIR/$BINARY_NAME"; then
+elif download_with_progress "$FALLBACK_URL" "$TEMP_DIR/$BINARY_NAME"; then
     mv "$TEMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
     chmod +x "$INSTALL_DIR/$BINARY_NAME"
     INSTALLED_SUCCESS=1
 fi
 
-# 6. Fallback: If precompiled binary is not yet published on GitHub, install via Python venv
+# Fallback: if release binary is not yet available, build via virtualenv
 if [ "$INSTALLED_SUCCESS" -eq 0 ]; then
-    echo -e "${YELLOW}Prebuilt binary not found on GitHub Releases.${NC}"
-    echo -e "${CYAN}Falling back to portable Python environment build...${NC}"
+    step_warn "Prebuilt GitHub binary not yet available. Falling back to portable Python build..."
     
     PYTHON_CMD=""
     for cmd in python3.12 python3.11 python3.10 python3 python; do
@@ -132,14 +186,13 @@ if [ "$INSTALLED_SUCCESS" -eq 0 ]; then
     done
 
     if [ -n "$PYTHON_CMD" ]; then
-        echo -e "Using Python: ${GREEN}$($PYTHON_CMD --version)${NC}"
+        step_item "Using system Python: $($PYTHON_CMD --version)"
         VENV_DIR="$HOME/.local/share/stackcheck/env"
         mkdir -p "$(dirname "$VENV_DIR")"
         "$PYTHON_CMD" -m venv "$VENV_DIR"
         "$VENV_DIR/bin/pip" install --upgrade pip --quiet
         "$VENV_DIR/bin/pip" install "git+https://github.com/${REPO_OWNER}/${REPO_NAME}.git" --quiet
         
-        # Create portable runner shim in INSTALL_DIR
         cat <<EOF > "$INSTALL_DIR/$BINARY_NAME"
 #!/usr/bin/env bash
 exec "$VENV_DIR/bin/stackcheck" "\$@"
@@ -147,15 +200,21 @@ EOF
         chmod +x "$INSTALL_DIR/$BINARY_NAME"
         INSTALLED_SUCCESS=1
     else
-        echo -e "${RED}Error: Neither prebuilt binary nor Python 3.10+ was found.${NC}"
-        echo -e "Please check releases at: https://github.com/${REPO_OWNER}/${REPO_NAME}/releases"
+        step_error "Neither prebuilt binary nor Python 3.10+ was found."
+        echo -e "Check release binaries at: https://github.com/${REPO_OWNER}/${REPO_NAME}/releases"
         exit 1
     fi
 fi
 
-# 7. Install Application Icon and Desktop Launcher (Linux only)
+step_item "Binary downloaded and verified"
+
+# -------------------------------------------------------------
+# STEP 4: Desktop Launcher & Icon Registration
+# -------------------------------------------------------------
+step_header "4/4" "Configuring application & shortcuts..."
+
 if [ "$OS_TYPE" = "linux" ]; then
-    # Fetch or generate high-fidelity SVG icon
+    # Generate high-fidelity SVG icon
     cat <<'EOF' > "$ICONS_DIR/stackcheck.svg"
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
@@ -251,7 +310,7 @@ EOF
         cp "$ICONS_DIR/stackcheck.svg" "$HOME/.local/share/icons/stackcheck.svg" 2>/dev/null || true
     fi
 
-    # 8. Register Desktop Launcher
+    # Register Desktop Launcher
     cat <<EOF > "$APPS_DIR/stackcheck.desktop"
 [Desktop Entry]
 Type=Application
@@ -265,35 +324,39 @@ StartupNotify=true
 EOF
     chmod +x "$APPS_DIR/stackcheck.desktop"
 
-    # Update system desktop & icon cache
     if command -v update-desktop-database >/dev/null 2>&1; then
         update-desktop-database "$APPS_DIR" 2>/dev/null || true
     fi
     if command -v gtk-update-icon-cache >/dev/null 2>&1; then
         gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
     fi
+    step_item "Registered Desktop application launcher & high-res SVG icon"
 fi
 
-# 9. Check PATH configuration
+# Check PATH
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-    echo -e "${YELLOW}Notice: $INSTALL_DIR is not in your PATH.${NC}"
+    step_warn "$INSTALL_DIR is not yet in your PATH."
     for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
         if [ -f "$rc" ] && ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$rc"; then
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
-            echo -e "Added ~/.local/bin to $(basename "$rc")"
+            step_item "Added $INSTALL_DIR to $(basename "$rc")"
         fi
     done
 fi
 
-echo -e "\n${GREEN}====================================================${NC}"
-echo -e "${GREEN}  🎉 StackCheck was successfully installed!          ${NC}"
-echo -e "${GREEN}====================================================${NC}"
-echo -e "Portable binary at: ${CYAN}$INSTALL_DIR/$BINARY_NAME${NC}"
+echo -e ""
+echo -e "${GREEN}${BOLD}  ┌──────────────────────────────────────────────────────────┐${RESET}"
+echo -e "${GREEN}${BOLD}  │${RESET}  ${GREEN}✔ StackCheck installed successfully!${RESET}                    ${GREEN}${BOLD}│${RESET}"
+echo -e "${GREEN}${BOLD}  └──────────────────────────────────────────────────────────┘${RESET}"
+echo -e ""
+echo -e "  ${BOLD}Installed binary:${RESET} ${CYAN}$INSTALL_DIR/$BINARY_NAME${RESET}"
 if [ "$OS_TYPE" = "linux" ]; then
-    echo -e "Desktop launcher:   ${CYAN}$APPS_DIR/stackcheck.desktop${NC}"
-    echo -e "Application icon:   ${CYAN}$ICONS_DIR/stackcheck.svg${NC}"
+    echo -e "  ${BOLD}Desktop app:${RESET}      ${CYAN}$APPS_DIR/stackcheck.desktop${RESET}"
 fi
-
-echo -e "\n🚀 Launch Dashboard:  ${GREEN}stackcheck${NC}"
-echo -e "🔍 CLI Scrape & Test: ${GREEN}stackcheck scrape \"Data Engineer\" --location Pakistan${NC}"
-echo -e "🔄 Check for Updates: ${GREEN}stackcheck update${NC}\n"
+echo -e ""
+echo -e "  ${BOLD}Available Commands:${RESET}"
+echo -e "    ${CYAN}stackcheck${RESET}         ${DIM}• Launch interactive Streamlit Web Dashboard${RESET}"
+echo -e "    ${CYAN}stackcheck status${RESET}  ${DIM}• Check if dashboard server is currently active${RESET}"
+echo -e "    ${CYAN}stackcheck stop${RESET}    ${DIM}• Stop dashboard background process & free port${RESET}"
+echo -e "    ${CYAN}stackcheck update${RESET}  ${DIM}• Check and install latest updates in-place${RESET}"
+echo -e ""

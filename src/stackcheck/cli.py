@@ -38,22 +38,117 @@ def web():
 
 
 @main.command()
-def update():
-    """Check for latest release updates."""
+def stop():
+    """Stop the running StackCheck server and release ports."""
+    from stackcheck.launcher import stop_running_instance, get_running_instance
+    info = get_running_instance()
+    if info:
+        pid = info.get("pid")
+        port = info.get("port")
+        stopped = stop_running_instance()
+        if stopped:
+            console.print(f"[bold green]✔ Stopped StackCheck server (PID {pid}, port {port} released).[/]")
+        else:
+            console.print("[yellow]Could not stop server process cleanly.[/]")
+    else:
+        console.print("[yellow]StackCheck is not currently running.[/]")
+
+
+@main.command()
+def status():
+    """Check the health and runtime status of the StackCheck dashboard."""
+    import time
+    from stackcheck.launcher import get_running_instance
+    info = get_running_instance()
+    if info:
+        uptime_s = int(time.time() - info.get("start_time", time.time()))
+        table = Table(title="🟢 StackCheck Server Status", border_style="green")
+        table.add_column("Property", style="bold white")
+        table.add_column("Value", style="cyan")
+        table.add_row("Status", "[bold green]Active (Listening)[/]")
+        table.add_row("Local URL", str(info.get("url")))
+        table.add_row("Port", str(info.get("port")))
+        table.add_row("Process PID", str(info.get("pid")))
+        table.add_row("Uptime", f"{uptime_s}s")
+        console.print(table)
+        console.print("[dim]Tip: Run 'stackcheck stop' to shut down this server.[/]")
+    else:
+        console.print(Panel(
+            "[bold yellow]StackCheck server is currently STOPPED.[/]\n\n"
+            "Run [bold cyan]stackcheck[/] or [bold cyan]stackcheck web[/] to launch the interactive dashboard.",
+            title="StackCheck Server Status",
+            border_style="yellow"
+        ))
+
+
+@main.command()
+@click.option("--yes", "-y", is_flag=True, default=False, help="Automatically download and install updates without asking.")
+def update(yes):
+    """Check for latest release updates and upgrade in-place."""
     from stackcheck.updater import UpdateChecker
     from stackcheck import __version__
-    console.print(f"[dim]Checking for updates... (Current version: v{__version__})[/]")
-    res = UpdateChecker.check_for_update()
-    if res and res.get("has_update"):
-        console.print(Panel(
-            f"[bold green]✨ New version v{res['latest_version']} available![/]\n\n"
-            f"[white]{res['release_title']}[/]\n"
-            f"Release page: [cyan]{res['html_url']}[/]",
-            title="Update Available",
-            border_style="green"
-        ))
-    else:
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, DownloadColumn, TransferSpeedColumn, TimeRemainingColumn
+
+    with console.status(f"[bold cyan]Checking for latest updates on GitHub...[/] (Current: v{__version__})", spinner="dots"):
+        res = UpdateChecker.check_for_update()
+
+    if not res:
         console.print(f"[bold green]✔ StackCheck is up to date (v{__version__}).[/]")
+        return
+
+    if not res.get("has_update"):
+        console.print(f"[bold green]✔ StackCheck is up to date (v{__version__}).[/]")
+        return
+
+    latest_ver = res["latest_version"]
+    console.print(Panel(
+        f"[bold green]✨ New version v{latest_ver} available![/] (Current: v{__version__})\n\n"
+        f"[white]{res['release_title']}[/]\n"
+        f"Release page: [cyan]{res['html_url']}[/]",
+        title="Update Available",
+        border_style="green"
+    ))
+
+    target_asset = res.get("target_asset")
+    if not target_asset or not target_asset.get("download_url"):
+        console.print(f"[yellow]No prebuilt binary matched your platform. Visit {res['html_url']} to update manually.[/]")
+        return
+
+    if not yes:
+        if not click.confirm(f"Do you want to download and install v{latest_ver} ({target_asset['name']}) now?", default=True):
+            console.print("[dim]Update skipped.[/]")
+            return
+
+    target_path = UpdateChecker.get_install_target_path()
+    console.print(f"[cyan]Installing update to:[/] [bold]{target_path}[/]")
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(bar_width=36),
+        DownloadColumn(),
+        TransferSpeedColumn(),
+        TimeRemainingColumn(),
+        console=console,
+        transient=True
+    ) as progress:
+        task = progress.add_task(f"Downloading {target_asset['name']}...", total=target_asset.get("size_bytes", 0))
+
+        def progress_cb(chunk_size, total_bytes):
+            if total_bytes and progress.tasks[task].total != total_bytes:
+                progress.update(task, total=total_bytes)
+            progress.advance(task, chunk_size)
+
+        try:
+            UpdateChecker.download_asset(
+                download_url=target_asset["download_url"],
+                dest_path=target_path,
+                progress_callback=progress_cb
+            )
+            console.print(f"[bold green]✔ Successfully updated StackCheck to v{latest_ver}![/]")
+            console.print("[dim]Restart StackCheck or run 'stackcheck' to use the new version.[/]")
+        except Exception as e:
+            console.print(f"[bold red]❌ Failed to download update:[/] {e}")
 
 
 

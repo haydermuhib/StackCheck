@@ -151,20 +151,29 @@ python build_app.py --onefile
 
 ## ⚙️ CLI Usage Reference
 
-StackCheck includes scriptable CLI commands for automated data collection:
+StackCheck includes scriptable CLI commands for automated data collection and process lifecycle control:
 
 ```bash
-# Scrape Data Analyst roles in Pakistan (or any country)
-stackcheck scrape "Data Analyst" --location Pakistan --limit 30
+# Launch interactive Streamlit Web Dashboard
+stackcheck
 
-# Scrape Backend Engineers with remote filter
-stackcheck scrape "Backend Engineer" --workplace remote --limit 50
+# Check running server status, URL, and PID
+stackcheck status
 
-# Export active workspace dataset to CSV, JSON, and Markdown
-stackcheck export --format all
+# Stop background server and release ports
+stackcheck stop
 
 # Check for updates and download latest GitHub Release
 stackcheck update
+
+# Scrape Data Analyst roles in Pakistan (or any country)
+stackcheck search "Data Analyst" --location Pakistan --limit 30
+
+# Scrape Backend Engineers with remote filter
+stackcheck search "Backend Engineer" --workplace remote --limit 50
+
+# Export active workspace dataset to CSV, JSON, and Markdown
+stackcheck export --format all
 ```
 
 ---
