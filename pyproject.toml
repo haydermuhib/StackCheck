@@ -20,7 +20,8 @@ dependencies = [
     "rich>=13.7.0",
     "curl_cffi>=0.16.0",
     "click>=8.1.7",
-    "pydantic>=2.6.0"
+    "pydantic>=2.6.0",
+    "graphifyy>=0.9.75",
 ]
 
 [project.scripts]
