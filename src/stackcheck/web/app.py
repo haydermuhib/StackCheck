@@ -110,26 +110,63 @@ def main():
     init_session()
     active_project = st.session_state.repo.get_project(st.session_state.active_project_id) or Project(id="default", name="Default Workspace")
 
-    # Custom styling
+    # Custom styling with adaptive light & dark mode support
     st.markdown("""
     <style>
     .main-header {
         font-size: 2.2rem;
         font-weight: 800;
-        color: #1e293b;
+        color: var(--text-color, #0f172a);
         margin-bottom: 0.2rem;
+        letter-spacing: -0.02em;
     }
     .sub-header {
         font-size: 1.05rem;
-        color: #64748b;
+        color: var(--text-color, #475569);
+        opacity: 0.85;
         margin-bottom: 1.5rem;
     }
     .metric-card {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: rgba(148, 163, 184, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.2);
         border-radius: 8px;
         padding: 1rem;
         text-align: center;
+    }
+    .saved-criteria-card {
+        background: rgba(59, 130, 246, 0.07);
+        border: 1px solid rgba(59, 130, 246, 0.28);
+        border-left: 4px solid #3b82f6;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin: 10px 0;
+    }
+    .saved-criteria-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-color, #0f172a);
+        margin-bottom: 5px;
+        letter-spacing: 0.04em;
+    }
+    .saved-criteria-item {
+        font-size: 0.8rem;
+        color: var(--text-color, #334155);
+        opacity: 0.92;
+        margin-bottom: 3px;
+    }
+    @media (prefers-color-scheme: dark) {
+        .main-header {
+            color: #f8fafc !important;
+        }
+        .sub-header {
+            color: #cbd5e1 !important;
+        }
+        .saved-criteria-title {
+            color: #f8fafc !important;
+        }
+        .saved-criteria-item {
+            color: #e2e8f0 !important;
+        }
     }
     </style>
     """, unsafe_allow_html=True)
@@ -183,13 +220,15 @@ def main():
         # Display saved criteria for the currently selected project
         if active_project.last_keywords:
             with st.container():
+                limit_disp = "All Matching (Deep Crawl)" if active_project.last_limit == 0 else f"{active_project.last_limit or 50} postings"
                 st.markdown(
                     f"""
-                    <div style='background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; padding: 10px 12px; border-radius: 6px; margin: 10px 0;'>
-                        <div style='font-size: 0.8rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;'>📌 SAVED PROJECT CRITERIA</div>
-                        <div style='font-size: 0.78rem; color: #334155; margin-bottom: 2px;'><b>Query:</b> <code style='color: #0284c7;'>{active_project.last_keywords}</code></div>
-                        <div style='font-size: 0.78rem; color: #334155; margin-bottom: 2px;'><b>Location:</b> {active_project.last_location or "Global / Any"}</div>
-                        <div style='font-size: 0.78rem; color: #334155;'><b>Workplace:</b> {active_project.last_workplace or "Any"} | <b>Level:</b> {active_project.last_experience or "All"}</div>
+                    <div class='saved-criteria-card'>
+                        <div class='saved-criteria-title'>📌 SAVED PROJECT CRITERIA</div>
+                        <div class='saved-criteria-item'><b>Query:</b> <code style='color: #38bdf8;'>{active_project.last_keywords}</code></div>
+                        <div class='saved-criteria-item'><b>Location:</b> {active_project.last_location or "Global / Any"}</div>
+                        <div class='saved-criteria-item'><b>Workplace:</b> {active_project.last_workplace or "Any"} | <b>Level:</b> {active_project.last_experience or "All"}</div>
+                        <div class='saved-criteria-item'><b>Limit:</b> {limit_disp}</div>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -198,12 +237,13 @@ def main():
                     with st.spinner(f"Scraping fresh jobs for '{active_project.last_keywords}'..."):
                         wp_enum = WorkplaceType(active_project.last_workplace) if active_project.last_workplace and active_project.last_workplace != "any" else None
                         exp_enum = ExperienceLevel(active_project.last_experience) if active_project.last_experience and active_project.last_experience != "any" else None
+                        re_limit = active_project.last_limit if active_project.last_limit is not None else 50
                         q = SearchQuery(
                             keywords=active_project.last_keywords or "Data Analyst",
                             location=active_project.last_location or "",
                             workplace_type=wp_enum,
                             experience_level=exp_enum,
-                            limit=active_project.last_limit or 50,
+                            limit=re_limit,
                             project_id=active_project.id
                         )
                         fresh_jobs = st.session_state.client.search_jobs(q)
@@ -292,8 +332,17 @@ def main():
         }
         selected_exp = exp_map[exp_choice]
 
-        # Limit (increased up to 500)
-        limit = st.slider("Job Postings Limit (Pagination Depth):", min_value=10, max_value=500, value=50, step=10)
+        # Limit controls: Target slider + "Fetch All" toggle
+        col_lim1, col_lim2 = st.columns([1.4, 1.6])
+        with col_lim1:
+            limit_slider = st.slider("Target Limit:", min_value=10, max_value=1000, value=50, step=10, disabled=st.session_state.get("fetch_all_active", False))
+        with col_lim2:
+            st.write("")  # vertical alignment
+            fetch_all = st.checkbox("⚡ Fetch All Available", value=False, key="fetch_all_active", help="Paginates continuously until all matching jobs are collected (automated safety circuit breaker caps at 40 pages / ~2,500 jobs).")
+
+        effective_limit = 0 if fetch_all else limit_slider
+        if fetch_all:
+            st.caption("🔄 *Deep Crawl active: Scraper will collect every matching posting until HiringCafe results are exhausted.*")
 
         # Trigger Pipeline
         run_btn = st.button("🚀 Scrape & Add to Project", type="primary", width="stretch")
@@ -314,7 +363,7 @@ def main():
                     location=canonical_loc,
                     workplace_type=selected_workplace,
                     experience_level=selected_exp,
-                    limit=limit,
+                    limit=effective_limit,
                     project_id=st.session_state.active_project_id
                 )
 
@@ -762,9 +811,48 @@ def main():
                 )
 
             # Expandable details cards
+            st.markdown("---")
             st.subheader("📑 Detailed Section & Requirement Extraction")
-            for idx, job in enumerate(filtered_jobs[:10]):
-                with st.expander(f"📍 {job.title} — {job.company} ({job.location})"):
+            st.caption(
+                "💡 **What is this section?** When StackCheck ingests postings, its NLP engine parses raw descriptions, "
+                "separates candidate requirements from daily tasks, and assigns contextual weights (e.g. 1.8x for core requirements). "
+                "Inspect the cards below to audit parsed qualifications and verify employer expectations."
+            )
+
+            col_sort1, col_sort2 = st.columns([1.6, 1.4])
+            with col_sort1:
+                sort_order = st.selectbox(
+                    "Sort Cards By:",
+                    options=["Recent Scraped Order", "Highest Salary First", "Most Tech Skills Demanded", "Company Name (A-Z)"],
+                    index=0
+                )
+            with col_sort2:
+                card_limit_choice = st.selectbox(
+                    "Display Cards Count:",
+                    options=["Top 10 Postings", "Top 25 Postings", "Top 50 Postings", "All Matching Postings"],
+                    index=0
+                )
+
+            # Apply sorting
+            cards_to_show = list(filtered_jobs)
+            if sort_order == "Highest Salary First":
+                cards_to_show.sort(key=lambda j: (j.salary.max_amount or j.salary.min_amount or 0) if j.salary else 0, reverse=True)
+            elif sort_order == "Most Tech Skills Demanded":
+                cards_to_show.sort(key=lambda j: len(j.extracted_skills), reverse=True)
+            elif sort_order == "Company Name (A-Z)":
+                cards_to_show.sort(key=lambda j: j.company.lower() if j.company else "")
+
+            # Apply card count limit
+            count_map = {"Top 10 Postings": 10, "Top 25 Postings": 25, "Top 50 Postings": 50, "All Matching Postings": len(cards_to_show)}
+            limit_n = count_map.get(card_limit_choice, 10)
+            visible_cards = cards_to_show[:limit_n]
+
+            st.caption(f"Displaying **{len(visible_cards)}** of **{len(cards_to_show)}** filtered postings:")
+
+            for idx, job in enumerate(visible_cards):
+                sal_tag = f" • 💵 {job.salary.formatted}" if job.salary and job.salary.formatted != "Not specified" else ""
+                skills_count = len(job.extracted_skills)
+                with st.expander(f"📍 {job.title} — {job.company} ({job.location}){sal_tag} [{skills_count} skills]"):
                     col_d1, col_d2 = st.columns([1, 1])
                     with col_d1:
                         st.write(f"**Workplace:** {job.workplace_type.value.capitalize()} | **Experience:** {job.experience_level.value.capitalize()}")
@@ -780,7 +868,12 @@ def main():
 
                     if job.requirements_bullets:
                         st.markdown("**Core Requirements Extracted:**")
-                        for b in job.requirements_bullets[:4]:
+                        for b in job.requirements_bullets[:5]:
+                            st.markdown(f"- {b}")
+
+                    if job.task_bullets:
+                        st.markdown("**Day-to-Day Responsibilities Extracted:**")
+                        for b in job.task_bullets[:4]:
                             st.markdown(f"- {b}")
 
             # Data Exporters

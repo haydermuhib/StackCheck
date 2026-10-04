@@ -229,7 +229,7 @@ class HiringCafeClient:
                 raw_json=item
             )
             clean_jobs.append(job_post)
-            if len(clean_jobs) >= query.limit:
+            if query.limit > 0 and len(clean_jobs) >= query.limit:
                 break
 
         return clean_jobs
@@ -278,8 +278,11 @@ class HiringCafeClient:
             search_state["workplaceTypes"] = wp
 
         # Calculate pages needed to satisfy limit (each page returns ~60-90 jobs)
-        # Allows paginating up to 25 pages (e.g. 500+ jobs)
-        target_pages = min(max(1, (query.limit + 40) // 40), 25)
+        # When query.limit == 0 (Fetch All mode), paginate up to safety ceiling of 40 pages (~2,500 jobs)
+        if query.limit == 0:
+            target_pages = 40
+        else:
+            target_pages = min(max(1, (query.limit + 40) // 40), 30)
         
         all_hits: List[Dict[str, Any]] = []
         seen_hit_ids = set()
@@ -289,10 +292,11 @@ class HiringCafeClient:
 
         for page_idx in range(target_pages):
             if progress_callback:
+                page_label = f"Scraping page {page_idx + 1}/{target_pages} ({len(all_hits)} postings collected)..." if query.limit > 0 else f"Deep scraping page {page_idx + 1} ({len(all_hits)} postings collected so far)..."
                 progress_callback(
                     page_idx + 1, 
                     target_pages + 1, 
-                    f"Scraping page {page_idx + 1}/{target_pages} ({len(all_hits)} postings collected)..."
+                    page_label
                 )
 
             page_url = f"https://hiringcafe.com/classic?searchState={encoded_state}&page={page_idx}"
@@ -304,6 +308,7 @@ class HiringCafeClient:
                         data = json.loads(m.group(1))
                         hits = data.get("props", {}).get("pageProps", {}).get("ssrHits", [])
                         if isinstance(hits, list) and len(hits) > 0:
+                            new_in_page = 0
                             for h in hits:
                                 hid = h.get("id") or h.get("objectID") or h.get("canonical_job_id")
                                 if hid and hid in seen_hit_ids:
@@ -311,7 +316,14 @@ class HiringCafeClient:
                                 if hid:
                                     seen_hit_ids.add(hid)
                                 all_hits.append(h)
-                            if len(all_hits) >= query.limit * 2:
+                                new_in_page += 1
+
+                            # Circuit breaker: If a page returns 0 new hits, end of results has been reached
+                            if new_in_page == 0 and page_idx > 0:
+                                break
+
+                            # If a specific limit is set (> 0), stop once candidate pool is sufficient
+                            if query.limit > 0 and len(all_hits) >= query.limit * 2:
                                 break
                             continue
                         elif page_idx > 0:
