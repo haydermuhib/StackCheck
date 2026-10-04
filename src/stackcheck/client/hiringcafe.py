@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from curl_cffi import requests
 import json
 import re
+import time
 import urllib.parse
 
 from stackcheck.models import JobPost, SearchQuery, WorkplaceType, ExperienceLevel, Region, SalaryInfo
@@ -62,8 +63,12 @@ class HiringCafeClient:
         self.rule_extractor = RuleExtractor()
         self.llm_extractor = LLMExtractor() if use_llm_if_available else None
         self.last_error: Optional[str] = None
-        self.session = requests.Session(impersonate="chrome120")
+        self._init_session(impersonate="chrome124")
+
+    def _init_session(self, impersonate: str = "chrome124"):
+        self.session = requests.Session(impersonate=impersonate)
         self.session.headers.update({
+            "User-Agent": DEFAULT_USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
             "Referer": "https://hiringcafe.com/",
@@ -311,10 +316,18 @@ class HiringCafeClient:
         all_hits: List[Dict[str, Any]] = []
         seen_hit_ids = set()
         last_error = None
-
         encoded_state = urllib.parse.quote(json.dumps(search_state))
 
+        # Warm up session with root origin to establish Cloudflare TLS context
+        try:
+            self.session.get("https://hiringcafe.com/", timeout=8.0)
+        except Exception:
+            pass
+
         for page_idx in range(target_pages):
+            if page_idx > 0:
+                time.sleep(0.35)
+
             if progress_callback:
                 page_label = f"Scraping page {page_idx + 1}/{target_pages} ({len(all_hits)} postings collected)..." if query.limit > 0 else f"Deep scraping page {page_idx + 1} ({len(all_hits)} postings collected so far)..."
                 progress_callback(
@@ -326,6 +339,12 @@ class HiringCafeClient:
             page_url = f"https://hiringcafe.com/classic?searchState={encoded_state}&page={page_idx}"
             try:
                 resp = self.session.get(page_url, timeout=12.0)
+                # If challenged on first page, attempt automatic session rotation to chrome
+                if resp.status_code == 403 and page_idx == 0:
+                    logger.warning("Encountered 403 on primary fingerprint, rotating impersonation to chrome...")
+                    self._init_session(impersonate="chrome")
+                    resp = self.session.get(page_url, timeout=12.0)
+
                 if resp.status_code == 200:
                     m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', resp.text)
                     if m:
@@ -353,10 +372,17 @@ class HiringCafeClient:
                         elif page_idx > 0:
                             # Reached last page
                             break
+                    else:
+                        # 200 returned but without __NEXT_DATA__ (possible Turnstile interstitial)
+                        if "cf_chl" in resp.text or "_cf_" in resp.text:
+                            last_error = "❌ Job search provider returned Bot Challenge (Cloudflare Turnstile)."
+                            break
                 elif resp.status_code == 403:
-                    last_error = "❌ Job search provider returned HTTP 403 (Bot Challenge)."
+                    last_error = "❌ Job search provider returned HTTP 403 (Bot Challenge). Cloudflare temporarily challenged your connection."
+                    break
                 else:
                     last_error = f"❌ Live service returned HTTP {resp.status_code}."
+                    break
             except Exception as e:
                 err_str = str(e)
                 if "could not resolve host" in err_str.lower() or "connection" in err_str.lower() or "name resolution" in err_str.lower():
@@ -365,6 +391,7 @@ class HiringCafeClient:
                     last_error = "❌ Request Timeout: Live job index took too long to respond."
                 else:
                     last_error = f"❌ Live Job Index Fetch Error: {err_str}"
+                break
 
         if all_hits:
             return all_hits, None
