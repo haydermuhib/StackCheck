@@ -11,7 +11,7 @@
   <a href="https://github.com/haydermuhib/StackCheck"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python 3.10+" /></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/Streamlit-1.42%2B-FF4B4B?style=flat-square&logo=streamlit" alt="Streamlit" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License: MIT" /></a>
-  <a href="https://github.com/haydermuhib/StackCheck/releases"><img src="https://img.shields.io/badge/Version-0.1.0-cyan?style=flat-square" alt="v0.1.0" /></a>
+  <a href="https://github.com/haydermuhib/StackCheck/releases"><img src="https://img.shields.io/badge/Version-0.1.3-cyan?style=flat-square" alt="v0.1.3" /></a>
   <a href="https://github.com/haydermuhib/StackCheck"><img src="https://img.shields.io/badge/Architecture-Portable%20Zero--Install-purple?style=flat-square" alt="Portable Zero-Install" /></a>
 </p>
 
