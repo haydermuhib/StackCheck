@@ -129,3 +129,17 @@ def test_extended_job_market_charts():
     assert fig_density is not None
     plt.close(fig_density)
 
+
+def test_plot_salary_by_tech_sorting_options():
+    jobs = create_sample_jobs()
+    stats = MetricsEngine.aggregate(jobs, query_keywords="Data Analyst")
+    
+    fig_by_salary = plot_salary_by_tech(stats, min_samples=1, sort_by="avg_salary")
+    assert fig_by_salary is not None
+    plt.close(fig_by_salary)
+
+    fig_by_samples = plot_salary_by_tech(stats, min_samples=1, sort_by="sample_count")
+    assert fig_by_samples is not None
+    plt.close(fig_by_samples)
+
+

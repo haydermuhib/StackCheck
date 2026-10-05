@@ -620,15 +620,35 @@ def main():
             st.markdown("---")
 
             # 3. Salary Benchmarks & Workplace/Experience Distributions
-            col_sal, col_dist = st.columns([1.2, 1])
+            col_sal, col_dist = st.columns([1.3, 1])
 
             with col_sal:
                 st.subheader("💵 Salary Benchmarks by Technology")
-                sal_fig = plot_salary_by_tech(stats)
+                st.caption("Displays Min, Avg, and Max compensation with sample size validation.")
+                
+                c_ctrl1, c_ctrl2 = st.columns([1, 1.2])
+                with c_ctrl1:
+                    sal_min_samples = st.selectbox(
+                        "Min Postings Required (N):",
+                        options=[1, 2, 3, 5, 10],
+                        index=2,  # Default to min 3 samples
+                        help="Filters out one-off outlier roles that skew salary averages.",
+                        key="sal_min_samples_select"
+                    )
+                with c_ctrl2:
+                    sal_sort_mode = st.selectbox(
+                        "Rank Order By:",
+                        options=["Highest Average Salary", "Most Disclosed Postings (Sample Count)"],
+                        index=0,
+                        key="sal_sort_mode_select"
+                    )
+                
+                sort_key = "sample_count" if "Sample" in sal_sort_mode else "avg_salary"
+                sal_fig = plot_salary_by_tech(stats, min_samples=sal_min_samples, sort_by=sort_key)
                 if sal_fig:
                     st.pyplot(sal_fig, width="stretch")
                 else:
-                    st.info("Insufficient structured salary samples in current query to render compensation error bars.")
+                    st.info(f"No technologies have at least {sal_min_samples} salary samples in the current dataset. Try lowering the minimum postings threshold.")
 
             with col_dist:
                 st.subheader("🌍 Workplace & Experience Distribution")
