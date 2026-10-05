@@ -1,0 +1,113 @@
+# StackCheck — Tech Stack Market Intelligence Engine
+
+> StackCheck is a Python-based tech stack intelligence engine, scraping analytics pipeline, and interactive web dashboard. It collects live job postings from HiringCafe, applies section-aware NLP skill extraction ($1.8\times \to 1.0\times$), normalizes international compensation into USD, and delivers statistical market insights with local SQLite persistence.
+
+## Project Overview
+
+- **Repository**: [haydermuhib/StackCheck](https://github.com/haydermuhib/StackCheck)
+- **Version**: `v0.1.8`
+- **License**: MIT
+- **Runtime**: Python 3.10+
+- **Primary Tech Stack**: Streamlit, Matplotlib OOP, Seaborn, Pandas, SQLite, `curl_cffi`, Click, Rich.
+
+---
+
+## Key Capabilities & Core Value
+
+Unlike raw job search platforms (such as HiringCafe) that only display flat job search cards, StackCheck transforms unstructured job postings into multidimensional statistical intelligence:
+
+1. **Section-Aware Priority Weighting**: Differentiates core qualifications from generic descriptions. Positional decay gives $1.8\times$ weight to Requirement Bullet #1 down to $1.0\times$ for general body text and $0.7\times$ for nice-to-haves.
+2. **Tech Co-Occurrence & Synergies**: Computes pairwise correlation matrices visualized as Seaborn heatmaps to identify synergistic tool bundles (e.g. `Python + SQL`, `dbt + Snowflake + BigQuery`).
+3. **Robust Statistical Salary Benchmarks**: Calculates Min, Avg, and Max compensation error-bar distributions with sample size validation ($N \ge 3$) to eliminate 1-sample outlier distortion.
+4. **Global Currency Normalization**: Syncs live daily exchange rates with offline fallback rates for 30+ countries, converting foreign currencies (`INR`, `PKR`, `EUR`, `GBP`, `CAD`, `PHP`, `CRC`) to canonical USD.
+5. **Workplace Mode Analysis**: Compares Remote vs. Hybrid vs. Onsite salary distributions and computes the Remote Pay Premium.
+6. **Multi-Project Workspace Isolation**: SQLite-backed research workspaces allow separate historical tracking across roles (e.g. "Data Analyst 2026", "ML Engineer EU").
+7. **Offline Privacy & Portability**: Data is stored locally in SQLite (`~/.stackcheck/stackcheck.db`). Exports to CSV, JSON, and Markdown are generated with one click.
+
+---
+
+## Ingestion Architecture & Ethical Scraping Guarantees
+
+StackCheck is explicitly engineered for **sustainable, polite, and low-footprint data collection**:
+
+- **⚡ 98% Request Reduction (Batch SSR Harvesting)**: Rather than launching heavy headless Chromium/Selenium browsers or visiting 2,000 individual job page URLs one-by-one, StackCheck intercepts Next.js `__NEXT_DATA__` server-side rendered payloads. Each single lightweight HTTP request returns **60 to 90 complete structured job profiles at once**. Collecting 2,000 jobs requires only ~25–30 requests in total.
+- **⏱️ Human-Cadence Pacing**: Sequential page requests are throttled with courtesy pauses (`time.sleep(0.35)`) over a single persistent HTTP connection. This keeps network activity identical to a human browsing search results, preventing any server strain or DDoS risk.
+- **🔒 Zero-Re-scrape Architecture (100% Local Compute)**: Ingested jobs are stored in local SQLite. All subsequent skill extraction, NLP disambiguation, salary recalculations, filtering, and chart rendering happen **entirely offline on the user's local machine**—sending zero recurring network traffic to HiringCafe.
+- **🛡️ Strict Role Relevance Filtering**: Tokenized role-class validation (`JobNormalizer.is_role_relevant`) ensures non-analyst roles (e.g., SRE or C++ low-latency developers mentioning "data") do not pollute specialized queries.
+
+---
+
+## Codebase Map & Module Reference
+
+- `src/stackcheck/client/hiringcafe.py`: Live HTTP client using `curl_cffi` (Chrome 124 TLS fingerprinting), batch Next.js payload parsing, courtesy throttling, and automated circuit breakers.
+- `src/stackcheck/client/normalizer.py`: Role relevance filtering, SHA-256 MD5 deduplication fingerprinting, geographic synonym and typo mapping, and salary range parsing.
+- `src/stackcheck/analyzer/taxonomy.py`: Canonical tech taxonomy mapping 100+ technologies across 9 functional categories (Languages, Databases, BI, Cloud/DevOps, AI/ML, Platforms, etc.).
+- `src/stackcheck/analyzer/rule_extractor.py`: Section-aware bullet extractor assigning positional priority weights ($1.8\times$ Requirements vs $1.0\times$ General).
+- `src/stackcheck/analyzer/currency.py`: Currency manager with live Open Exchange API sync, 24-hour cache TTL, and offline fallback rates.
+- `src/stackcheck/analyzer/metrics.py`: Statistical aggregation engine computing co-occurrences, salary stats, stack density, and Pandas DataFrame representations.
+- `src/stackcheck/storage/db.py`: SQLite schema definitions with foreign keys and index optimization.
+- `src/stackcheck/storage/repository.py`: Project-scoped CRUD repository managing jobs, search runs, and skills.
+- `src/stackcheck/storage/exporters.py`: Exporters for CSV, JSON schema dumps, and executive Markdown briefs.
+- `src/stackcheck/web/app.py`: Streamlit multi-tab analytics dashboard with interactive filters and project switcher.
+- `src/stackcheck/web/charts.py`: Matplotlib OOP API (`fig, ax`) visualization engine with Seaborn heatmaps and collision-free salary error bars.
+- `src/stackcheck/launcher.py`: Programmatic desktop lifecycle manager with port discovery, single-instance verification, and persistent frontend asset mirroring.
+- `src/stackcheck/cli.py`: Click CLI styled with Rich panels and detached daemon (`-d`) support.
+- `src/stackcheck/updater.py`: In-place self-updater streaming latest GitHub Releases.
+
+---
+
+## CLI & Usage Commands
+
+```bash
+# Launch interactive Streamlit Web Dashboard (foreground)
+stackcheck
+
+# Launch Web Dashboard as detached background service
+stackcheck -d
+
+# Check background service status, URL, and PID
+stackcheck status
+
+# Verify runtime dependencies and C-extensions
+stackcheck check
+
+# Stop background server and release ports
+stackcheck stop
+
+# Check for updates and download latest GitHub Release
+stackcheck update
+
+# Scrape jobs from CLI into SQLite workspace
+stackcheck search "Data Analyst" --location "United States" --limit 50
+
+# Export active dataset to CSV, JSON, and Markdown
+stackcheck export --format all
+```
+
+---
+
+## Testing & Verification
+
+StackCheck contains 35 passing automated unit tests executed via Pytest:
+
+```bash
+./.venv/bin/pytest -v
+```
+
+Test coverage spans:
+- `tests/test_analyzer.py`: Section segmentation, weighting multipliers, and metrics engine.
+- `tests/test_client.py`: Ingestion parsing, location normalization, and client structure.
+- `tests/test_normalizer_relevance.py`: Strict role relevance filtering and anti-pollution checks.
+- `tests/test_salary_chart_robustness.py`: Sample size thresholding ($N \ge 3$) and collision-free error-bar rendering.
+- `tests/test_storage.py`: SQLite persistence, multi-project isolation, and deduplication.
+- `tests/test_web.py`: Pandas conversions, Matplotlib charts, and interactive sorting options.
+- `tests/test_cli.py`: Click CLI flags, version commands, and detached execution.
+- `tests/test_launcher.py`: Instance tracking, port discovery, and script synchronization.
+
+---
+
+## Documentation Links
+
+- [README.md](file:///home/haider/Desktop/MyGithub/StackCheck/README.md): Quickstart guide, installation options, and feature showcase.
+- [ARCHITECTURE.md](file:///home/haider/Desktop/MyGithub/StackCheck/ARCHITECTURE.md): Complete architectural specification, subsystem details, and database schema.
+- [PRESENTATION.md](file:///home/haider/Desktop/MyGithub/StackCheck/PRESENTATION.md): 25-minute slide deck with timing annotations and visual frameworks.

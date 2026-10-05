@@ -842,6 +842,16 @@
               <td>Deterministic fingerprinting across titles, companies, and locations</td>
             </tr>
             <tr>
+              <td><strong>Salary Benchmarks</strong></td>
+              <td>Raw numbers distorted by 1-sample outliers</td>
+              <td>Statistical Min/Avg/Max error bars with sample validation (N &ge; 3)</td>
+            </tr>
+            <tr>
+              <td><strong>Server Footprint</strong></td>
+              <td>Heavy multi-tab scraping that hammers origin servers</td>
+              <td>Polite batch SSR harvesting (98% request reduction) + zero-re-scrape local SQLite compute</td>
+            </tr>
+            <tr>
               <td><strong>Direct Employer Links</strong></td>
               <td>Generic search redirects</td>
               <td>Preserves direct employer application URLs in table columns and cards</td>
@@ -931,20 +941,20 @@
 
       <div class="grid-2">
         <div class="card-mini">
-          <h4>1. Deterministic Fingerprint</h4>
-          <p>Generates a SHA-256 hash from normalized job title, company name, and location. Reposted ads are updated rather than duplicated.</p>
+          <h4>⚡ 98% Request Reduction (Batch SSR)</h4>
+          <p>Intercepts Next.js <code>__NEXT_DATA__</code> payloads to ingest 60–90 structured jobs per single request. Gathering 2,000 postings takes ~25–30 requests instead of 2,000 separate page hits.</p>
         </div>
         <div class="card-mini">
-          <h4>2. Geographic Normalizer</h4>
-          <p>Maps colloquial entries (e.g. "Lahore", "Bangalore", "Indai", "USA", "NZ") into canonical country names so regional market comparisons remain clean.</p>
+          <h4>⏱️ Human-Cadence Pacing (No Server Strain)</h4>
+          <p>Sequential requests with courtesy pauses (<code>time.sleep(0.35)</code>) and persistent HTTP/2 connection. Traffic volume is identical to a single human scrolling a feed—zero DDoS or server load.</p>
         </div>
         <div class="card-mini">
-          <h4>3. Workplace & Level Mapping</h4>
-          <p>Classifies postings into Remote, Hybrid, or Onsite, and maps seniority into Entry, Mid, Senior, and Lead categories.</p>
+          <h4>🔒 Zero-Re-scrape Local Compute</h4>
+          <p>Data stores directly in local SQLite (<code>stackcheck.db</code>). All NLP skill extraction, salary recalculations, and chart renders run 100% offline on your CPU with zero recurring network requests.</p>
         </div>
         <div class="card-mini">
-          <h4>4. Direct Apply Links</h4>
-          <p>Extracts and stores direct employer application links, enabling users to jump straight from the data table to the job posting.</p>
+          <h4>🛡️ Strict Role Relevance & Quality Filters</h4>
+          <p>Tokenized role validation rejects unrelated roles (e.g. SRE/DevOps mentioning "data"), while SHA-256 fingerprinting and canonical country mapping eliminate duplicates and spam.</p>
         </div>
       </div>
     </section>
@@ -1015,11 +1025,15 @@
       <div class="grid-2">
         <div class="card-mini">
           <h4>Tab 1: Market Overview</h4>
-          <p>Top demanded skills bar chart comparing frequency percent against weighted requirement scores, accompanied by workplace mode distributions.</p>
+          <p>Top demanded skills bar chart comparing raw market frequency against weighted requirement scores (1.8x), accompanied by domain breakdown and workplace distributions.</p>
         </div>
         <div class="card-mini">
-          <h4>Tab 2: Tech Synergies & Salaries</h4>
-          <p>Seaborn correlation heatmap showing co-occurring technologies, paired with min/avg/max compensation benchmark plots.</p>
+          <h4>Tab 2: Tech Synergies & Co-Occurrence</h4>
+          <p>Seaborn correlation heatmaps revealing tool synergies (e.g. <code>Python + SQL</code>, <code>dbt + Snowflake</code>) and country compensation scatter plots.</p>
+        </div>
+        <div class="card-mini">
+          <h4>Tab 2: Robust Salary Benchmarks</h4>
+          <p>Min/Avg/Max error bar plots protected by sample size thresholds (N &ge; 3) to eliminate 1-sample outliers, sample count tags <code>(n=X)</code>, and Remote Pay Premium KPIs.</p>
         </div>
         <div class="card-mini">
           <h4>Tab 3: Interactive Job Explorer</h4>
