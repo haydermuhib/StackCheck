@@ -89,7 +89,8 @@ jobs:
 
           # 5. Live Localhost Web Server Boot & Probe
           echo "=== 3. Testing Live Localhost Server Boot & HTTP Healthcheck ==="
-          "${{ matrix.dist_file }}" -d
+          "${{ matrix.dist_file }}" &
+          SERVER_PID=$!
 
           SERVER_OK=false
           for i in {1..25}; do
@@ -107,8 +108,8 @@ jobs:
 
           if [ "$SERVER_OK" != "true" ]; then
             echo "❌ ERROR: Localhost web server failed to return HTTP 200 within 25s! Last HTTP code: $HTTP_CODE"
-            cat "$HOME/.stackcheck/stackcheck.log" 2>/dev/null || true
             "${{ matrix.dist_file }}" stop || true
+            kill -9 $SERVER_PID 2>/dev/null || true
             exit 1
           fi
           echo "✔ Localhost web dashboard successfully booted and responded with HTTP 200 OK!"
@@ -118,6 +119,7 @@ jobs:
 
           # 7. Cleanly terminate server and release port
           "${{ matrix.dist_file }}" stop
+          kill -9 $SERVER_PID 2>/dev/null || true
           echo "✔ All binary sanity & live localhost tests passed cleanly!"
 
       - name: Rename Artifact for Release
