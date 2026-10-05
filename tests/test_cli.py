@@ -17,10 +17,12 @@ def test_cli_help():
     assert "Tech Stack Intelligence Engine" in result.output
     assert "status" in result.output
     assert "stop" in result.output
-    assert "web" in result.output
     assert "search" in result.output
     assert "update" in result.output
-    assert "--detach" in result.output or "-d" in result.output
+    assert "web" not in main.commands
+    assert "\n  web " not in result.output
+    assert "--detach" not in result.output
+    assert "-d" not in result.output
 
 
 def test_cli_version():
@@ -34,11 +36,22 @@ def test_cli_version():
     assert f"StackCheck v{__version__}" in res2.output
 
 
-def test_cli_web_detach_flag():
+def test_cli_detach_flag_removed():
     runner = CliRunner()
-    result = runner.invoke(main, ["web", "--help"])
-    assert result.exit_code == 0
-    assert "--detach" in result.output or "-d" in result.output
+    res1 = runner.invoke(main, ["-d"])
+    assert res1.exit_code != 0
+    assert "No such option" in res1.output and "-d" in res1.output
+
+    res2 = runner.invoke(main, ["--detach"])
+    assert res2.exit_code != 0
+    assert "No such option" in res2.output and "--detach" in res2.output
+
+
+def test_cli_web_command_removed():
+    runner = CliRunner()
+    result = runner.invoke(main, ["web"])
+    assert result.exit_code != 0
+    assert "No such command 'web'" in result.output
 
 
 def test_cli_status():

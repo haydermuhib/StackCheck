@@ -38,22 +38,13 @@ console = Console(legacy_windows=False)
 
 @click.group(invoke_without_command=True)
 @click.version_option(__version__, "-v", "--version", message="StackCheck v%(version)s")
-@click.option("-d", "--detach", is_flag=True, default=False, help="Run the Web Dashboard as a background detached service.")
 @click.pass_context
-def main(ctx, detach):
+def main(ctx):
     """StackCheck: Tech Stack Intelligence Engine & Data Analytics Dashboard."""
     if ctx.invoked_subcommand is None:
         # Default behavior: Launch Web Dashboard
         from stackcheck.launcher import launch
-        launch(detach=detach)
-
-
-@main.command()
-@click.option("-d", "--detach", is_flag=True, default=False, help="Run the Web Dashboard as a background detached service.")
-def web(detach):
-    """Launch the interactive Streamlit Web Dashboard."""
-    from stackcheck.launcher import launch
-    launch(detach=detach)
+        launch()
 
 
 @main.command()
@@ -99,8 +90,7 @@ def status():
     else:
         console.print(Panel(
             "[bold yellow]StackCheck server is currently STOPPED.[/]\n\n"
-            "Run [bold cyan]stackcheck[/] (foreground) or [bold cyan]stackcheck -d[/] (background daemon)\n"
-            "to launch the interactive dashboard.",
+            "Run [bold cyan]stackcheck[/] to launch the interactive dashboard.",
             title="StackCheck Server Status",
             border_style="yellow",
             padding=(1, 2)
