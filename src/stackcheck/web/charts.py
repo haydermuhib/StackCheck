@@ -112,30 +112,54 @@ def plot_co_occurrence_heatmap(stats: AggregatedStats, top_n: int = 10) -> Optio
     return fig
 
 
-def plot_salary_by_tech(stats: AggregatedStats, min_samples: int = 1) -> Optional[plt.Figure]:
+def plot_salary_by_tech(
+    stats: AggregatedStats, 
+    min_samples: int = 3, 
+    top_n: int = 12,
+    sort_by: str = "avg_salary"
+) -> Optional[plt.Figure]:
     """
-    Generate grouped salary comparison (Min, Avg, Max) for top technologies.
+    Generate grouped salary comparison (Min, Avg, Max) with sample size protection
+    and collision-free label layout.
     """
     if not stats.salary_by_top_tech:
         return None
 
-    data = []
+    # Collect candidate records
+    all_records = []
     for skill, s_info in stats.salary_by_top_tech.items():
-        if s_info.get("samples", 0) >= min_samples and s_info.get("avg", 0) > 0:
-            data.append({
+        samples = s_info.get("samples", 0)
+        avg_sal = s_info.get("avg", 0)
+        if samples > 0 and avg_sal > 0:
+            all_records.append({
                 "Skill": skill,
                 "Min Salary": s_info.get("min", 0),
-                "Avg Salary": s_info.get("avg", 0),
+                "Avg Salary": avg_sal,
                 "Max Salary": s_info.get("max", 0),
-                "Samples": s_info.get("samples", 0)
+                "Samples": samples
             })
+
+    if not all_records:
+        return None
+
+    # Filter by minimum sample size; gracefully fall back if threshold excludes all data
+    data = [r for r in all_records if r["Samples"] >= min_samples]
+    if len(data) < 3 and min_samples > 1:
+        # Fallback to lower threshold if dataset has sparse salaries
+        data = [r for r in all_records if r["Samples"] >= 1]
 
     if not data:
         return None
 
-    df = pd.DataFrame(data).sort_values(by="Avg Salary", ascending=True).tail(12)
+    df = pd.DataFrame(data)
 
-    fig, ax = plt.subplots(figsize=(9.5, max(4.5, len(df) * 0.4)), dpi=150)
+    # Sort logic
+    if sort_by == "sample_count":
+        df = df.sort_values(by=["Samples", "Avg Salary"], ascending=[True, True]).tail(top_n)
+    else:
+        df = df.sort_values(by=["Avg Salary", "Samples"], ascending=[True, True]).tail(top_n)
+
+    fig, ax = plt.subplots(figsize=(9.5, max(4.5, len(df) * 0.42)), dpi=150)
 
     y_pos = np.arange(len(df))
     height = 0.55
@@ -158,21 +182,32 @@ def plot_salary_by_tech(stats: AggregatedStats, min_samples: int = 1) -> Optiona
         label="Salary Range (Min - Max)"
     )
 
-    # Annotate average salary value
-    for idx, (bar, avg_val) in enumerate(zip(bars, df["Avg Salary"])):
+    # Collision-free text annotation positioned safely to the right of the max whisker
+    max_x_val = max(df["Max Salary"].max(), df["Avg Salary"].max())
+    offset = max(max_x_val * 0.02, 2000.0)
+
+    for bar, avg_val, max_val in zip(bars, df["Avg Salary"], df["Max Salary"]):
+        # Place label past the max error cap to prevent collision
+        label_x = max(avg_val, max_val) + offset
         ax.text(
-            avg_val + 2000,
+            label_x,
             bar.get_y() + bar.get_height() / 2,
             f"${avg_val:,.0f}",
             va="center",
+            ha="left",
             fontsize=8.5,
             fontweight="bold",
             color="#1e293b"
         )
 
+    # Include sample size (n=X) in tick labels
+    formatted_labels = [f"{row['Skill']}  (n={int(row['Samples'])})" for _, row in df.iterrows()]
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(df["Skill"], fontsize=9.5, fontweight="semibold")
+    ax.set_yticklabels(formatted_labels, fontsize=9.5, fontweight="semibold")
     ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"${x*1e-3:,.0f}k"))
+    
+    # Expand x-limit to prevent annotation cutoff
+    ax.set_xlim(0, (max_x_val + offset) * 1.15)
     
     ax.set_title("Salary Benchmarks by Extracted Technology (USD / Yr)", fontsize=13, fontweight="bold", pad=14, color="#0f172a")
     ax.set_xlabel("Compensation ($ USD)", fontsize=10, fontweight="semibold", color="#475569")
