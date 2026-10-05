@@ -93,10 +93,10 @@ jobs:
           SERVER_PID=$!
 
           SERVER_OK=false
-          for i in {1..25}; do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 3 http://127.0.0.1:8501 2>/dev/null)
+          for i in {1..30}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 2 http://127.0.0.1:8501 2>/dev/null || true)
             if [ "$HTTP_CODE" != "200" ]; then
-              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 3 http://localhost:8501 2>/dev/null)
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 2 http://localhost:8501 2>/dev/null || true)
             fi
             if [ "$HTTP_CODE" = "200" ]; then
               SERVER_OK=true
@@ -107,7 +107,7 @@ jobs:
           done
 
           if [ "$SERVER_OK" != "true" ]; then
-            echo "❌ ERROR: Localhost web server failed to return HTTP 200 within 25s! Last HTTP code: $HTTP_CODE"
+            echo "❌ ERROR: Localhost web server failed to return HTTP 200 within 30s! Last HTTP code: $HTTP_CODE"
             "${{ matrix.dist_file }}" stop || true
             kill -9 $SERVER_PID 2>/dev/null || true
             exit 1
