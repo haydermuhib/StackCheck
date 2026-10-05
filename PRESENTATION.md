@@ -246,7 +246,6 @@ StackCheck provides a multi-tab web dashboard built with Streamlit, Matplotlib O
 | Command | Action |
 |---|---|
 | `stackcheck` | Launch interactive Streamlit web dashboard |
-| `stackcheck -d` | Launch web dashboard as a background daemon |
 | `stackcheck status` | Check server health, active port, and uptime |
 | `stackcheck check` | Verify runtime environment & compiled C-extensions |
 | `stackcheck stop` | Terminate running dashboard processes |

@@ -192,11 +192,8 @@ python build_app.py --onefile
 StackCheck includes scriptable CLI commands for automated data collection and process lifecycle control:
 
 ```bash
-# Launch interactive Streamlit Web Dashboard (foreground)
+# Launch interactive Streamlit Web Dashboard
 stackcheck
-
-# Launch Web Dashboard as detached background service
-stackcheck -d
 
 # Show version
 stackcheck -v
@@ -207,7 +204,7 @@ stackcheck status
 # Verify runtime dependencies and C-extensions
 stackcheck check
 
-# Stop background server and release ports
+# Stop running server and release ports
 stackcheck stop
 
 # Check for updates and download latest GitHub Release
@@ -239,12 +236,11 @@ pytest tests/
 
 | Command / Resource | Purpose |
 | :--- | :--- |
-| `stackcheck` | Launch local web dashboard (foreground) |
-| `stackcheck -d` | Launch web dashboard as background daemon |
+| `stackcheck` | Launch local web dashboard |
 | `stackcheck -v` | Print installed StackCheck version |
-| `stackcheck status` | Check background service status, PID, and URL |
+| `stackcheck status` | Check server status, PID, and URL |
 | `stackcheck check` | Verify runtime environment & compiled C-extensions |
-| `stackcheck stop` | Stop running background service |
+| `stackcheck stop` | Stop running server |
 | `stackcheck search <title>` | Scrape live jobs from HiringCafe into SQLite |
 | `stackcheck export --format all` | Export dataset to `CSV`, `JSON`, and `Markdown` |
 | `stackcheck update` | In-place self-updater from GitHub Releases |

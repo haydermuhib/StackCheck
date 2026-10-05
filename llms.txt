@@ -51,7 +51,7 @@ StackCheck is explicitly engineered for **sustainable, polite, and low-footprint
 - `src/stackcheck/web/app.py`: Streamlit multi-tab analytics dashboard with interactive filters and project switcher.
 - `src/stackcheck/web/charts.py`: Matplotlib OOP API (`fig, ax`) visualization engine with Seaborn heatmaps and collision-free salary error bars.
 - `src/stackcheck/launcher.py`: Programmatic desktop lifecycle manager with port discovery, single-instance verification, and persistent frontend asset mirroring.
-- `src/stackcheck/cli.py`: Click CLI styled with Rich panels and detached daemon (`-d`) support.
+- `src/stackcheck/cli.py`: Click CLI styled with Rich panels and robust process controls.
 - `src/stackcheck/updater.py`: In-place self-updater streaming latest GitHub Releases.
 
 ---
@@ -59,11 +59,8 @@ StackCheck is explicitly engineered for **sustainable, polite, and low-footprint
 ## CLI & Usage Commands
 
 ```bash
-# Launch interactive Streamlit Web Dashboard (foreground)
+# Launch interactive Streamlit Web Dashboard
 stackcheck
-
-# Launch Web Dashboard as detached background service
-stackcheck -d
 
 # Check background service status, URL, and PID
 stackcheck status
@@ -101,7 +98,7 @@ Test coverage spans:
 - `tests/test_salary_chart_robustness.py`: Sample size thresholding ($N \ge 3$) and collision-free error-bar rendering.
 - `tests/test_storage.py`: SQLite persistence, multi-project isolation, and deduplication.
 - `tests/test_web.py`: Pandas conversions, Matplotlib charts, and interactive sorting options.
-- `tests/test_cli.py`: Click CLI flags, version commands, and detached execution.
+- `tests/test_cli.py`: Click CLI flags, version commands, and lifecycle controls.
 - `tests/test_launcher.py`: Instance tracking, port discovery, and script synchronization.
 
 ---

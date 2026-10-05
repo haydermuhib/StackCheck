@@ -45,7 +45,7 @@ StackCheck/
     ├── config.py               # Central workspace paths (~/.stackcheck/)
     ├── launcher.py             # Programmatic Streamlit bootloader & lifecycle engine
     ├── updater.py              # In-place auto-updater from GitHub Releases
-    └── cli.py                  # Rich CLI interface with detached daemon support
+    └── cli.py                  # Rich CLI interface
 ```
 
 ---
@@ -191,9 +191,8 @@ flowchart TD
   - Programmatically boots the local Streamlit engine without requiring a system `streamlit` CLI installation.
   - **Single-Instance Enforcement**: Reads and verifies PID from `~/.stackcheck/stackcheck.pid` and port availability; if an instance is already active, focuses the existing browser tab instead of spawning redundant server processes.
   - **Readiness Health Check**: Polls TCP connection availability (`is_port_listening`) before launching the system browser, preventing initial "connection refused" white-screens.
-  - **Detached Daemon Mode (`-d`)**: Spawns detached background processes with sanitized child environments (stripping PyInstaller `_MEIPASS2` to preserve independent lifecycle).
-  - **Deterministic Web App Sync**: Automatically extracts and synchronizes `app.py`, `charts.py`, and assets to `~/.stackcheck/web/` so Streamlit entrypoint files are immune to `/tmp` cleanup when parent CLI processes exit.
-  - **Persistent Streamlit Frontend Mirroring**: Mirrors Streamlit static assets (`index.html`, JS/CSS bundles) to `~/.stackcheck/streamlit_static/` and monkeypatches `streamlit.file_util.get_static_dir()`, insulating the Starlette static route handler from PyInstaller temporary `_MEI...` cleanup and preventing `500 Internal Server Error` in detached or cold-boot instances.
+  - **Deterministic Web App Sync**: Automatically extracts and synchronizes `app.py`, `charts.py`, and assets to `~/.stackcheck/web/` so Streamlit entrypoint files are always persistent and available.
+  - **Persistent Streamlit Frontend Mirroring**: Mirrors Streamlit static assets (`index.html`, JS/CSS bundles) to `~/.stackcheck/streamlit_static/` and monkeypatches `streamlit.file_util.get_static_dir()`, insulating the Starlette static route handler from PyInstaller temporary extraction and preventing `500 Internal Server Error`.
   - **Cross-Platform UTF-8 Console Safety**: Auto-reconfigures standard output and error streams on Windows consoles to protect against legacy codepage `UnicodeEncodeError` when rendering Rich checkmarks, panels, and emojis.
 - **`cli.py`**:
   - Production-grade Click CLI styled with Rich panels, spinners, and tables.
@@ -297,7 +296,8 @@ tests/test_analyzer.py::test_job_market_extended_metrics PASSED
 tests/test_analyzer.py::test_currency_manager_conversions PASSED
 tests/test_cli.py::test_cli_help PASSED
 tests/test_cli.py::test_cli_version PASSED
-tests/test_cli.py::test_cli_web_detach_flag PASSED
+tests/test_cli.py::test_cli_detach_flag_removed PASSED
+tests/test_cli.py::test_cli_web_command_removed PASSED
 tests/test_cli.py::test_cli_status PASSED
 tests/test_cli.py::test_cli_stop PASSED
 tests/test_cli.py::test_cli_projects_list PASSED
@@ -310,7 +310,7 @@ tests/test_launcher.py::test_updater_check_offline_or_invalid PASSED
 tests/test_launcher.py::test_is_port_listening_unused_port PASSED
 tests/test_launcher.py::test_instance_tracking_and_cleanup PASSED
 tests/test_launcher.py::test_locate_target_script_and_persistent_sync PASSED
-tests/test_launcher.py::test_detached_env_sanitization PASSED
+tests/test_launcher.py::test_launcher_signature_no_detach PASSED
 tests/test_storage.py::test_repository_save_and_retrieve PASSED
 tests/test_storage.py::test_exporters PASSED
 tests/test_storage.py::test_project_isolation_and_crud PASSED
@@ -322,7 +322,7 @@ tests/test_web.py::test_dataframe_conversions PASSED
 tests/test_web.py::test_charts_generation PASSED
 tests/test_web.py::test_extended_job_market_charts PASSED
 
-============================== 32 passed in 2.63s ==============================
+============================== 36 passed in 2.27s ==============================
 ```
 
 ---
@@ -336,9 +336,6 @@ StackCheck provides unified execution patterns that all share the centralized us
 # Run the interactive Streamlit dashboard via uv
 uv run stackcheck
 
-# Run as background service
-uv run stackcheck -d
-
 # Direct Streamlit launcher
 uv run streamlit run app.py
 ```
@@ -350,9 +347,6 @@ uv run python build_app.py --onefile
 
 # Run compiled binary directly (zero Python dependencies required)
 ./dist/StackCheck
-
-# Run detached background service
-./dist/StackCheck -d
 
 # Check service health & uptime
 ./dist/StackCheck status
