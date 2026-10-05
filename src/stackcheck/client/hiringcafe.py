@@ -131,9 +131,9 @@ class HiringCafeClient:
                 url = "https://hiringcafe.com"
 
             # Step 1: Filter by keyword relevance if doing broad fetch
-            kw_lower = query.keywords.lower().strip()
-            text_to_check = f"{title} {raw_desc} {' '.join(tech_tools if isinstance(tech_tools, list) else [])}".lower()
-            if kw_lower and kw_lower != "all" and not any(word in text_to_check for word in kw_lower.split()):
+            raw_tools = ' '.join(tech_tools if isinstance(tech_tools, list) else [])
+            combined_desc = f"{raw_desc} {raw_tools}"
+            if not JobNormalizer.is_role_relevant(title, combined_desc, query.keywords):
                 continue
 
             # Step 2: Spam & Quality Filter

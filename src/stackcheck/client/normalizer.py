@@ -282,6 +282,46 @@ class JobNormalizer:
         return False
 
     @staticmethod
+    def is_role_relevant(title: str, description: str, keywords: str) -> bool:
+        """
+        Validate whether a job posting is genuinely relevant to the search query.
+        Prevents broad matches where an unrelated role (e.g. SRE) mentions the word 'data'.
+        """
+        if not keywords or keywords.strip().lower() in ("all", "*"):
+            return True
+
+        kw_clean = keywords.strip().lower()
+        title_lower = title.lower()
+        desc_lower = description.lower()
+        full_text = f"{title_lower} {desc_lower}"
+
+        # 1. Exact phrase match in title or description
+        if kw_clean in full_text:
+            return True
+
+        # 2. Tokenize query keywords (ignoring small stop words)
+        stop_words = {"and", "or", "in", "the", "a", "an", "of", "for", "with", "to", "at"}
+        tokens = [t for t in re.split(r"\s+", kw_clean) if t and t not in stop_words and len(t) > 1]
+        if not tokens:
+            return True
+
+        # 3. Check if all required tokens appear in the text
+        all_tokens_present = all(tok in full_text for tok in tokens)
+        if not all_tokens_present:
+            return False
+
+        # 4. If query explicitly specifies a role class ('analyst', 'engineer', 'developer', 'scientist', 'manager', 'architect', 'designer'),
+        # require that this role class is represented in the title or as a primary role descriptor
+        role_classes = ["analyst", "engineer", "developer", "scientist", "architect", "manager", "designer"]
+        specified_roles = [r for r in role_classes if r in tokens]
+        if specified_roles:
+            # At least one specified role class must be present in the job title
+            if not any(r in title_lower for r in specified_roles):
+                return False
+
+        return True
+
+    @staticmethod
     def parse_workplace_type(location_str: str, workplace_field: Optional[str] = None) -> WorkplaceType:
         """Determine if job is Remote, Hybrid, or Onsite."""
         text = f"{location_str} {workplace_field or ''}".lower()
