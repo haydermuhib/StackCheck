@@ -365,87 +365,7 @@ def wait_for_server_and_open_browser(url: str, port: int, timeout: float = 15.0)
     t.start()
 
 
-def _launch_detached():
-    """Launch StackCheck in a detached background daemon process."""
-    import subprocess
-    STACKCHECK_DIR.mkdir(parents=True, exist_ok=True)
-    log_file_path = STACKCHECK_DIR / "stackcheck.log"
-
-    if getattr(sys, "frozen", False):
-        cmd = [sys.executable, "web"]
-    else:
-        cmd = [sys.executable, "-m", "stackcheck.cli", "web"]
-
-    log_file = open(log_file_path, "a", encoding="utf-8")
-
-    env = os.environ.copy()
-    # In PyInstaller one-file bundles, child processes inherit _MEIPASS2, which points to
-    # the parent's temporary folder. When the parent exits, PyInstaller cleans up that folder,
-    # causing FileNotFoundError on child accesses. Removing _MEIPASS2 ensures the child
-    # extracts and manages its own independent temporary directory.
-    env.pop("_MEIPASS2", None)
-    if "LD_LIBRARY_PATH_ORIG" in env:
-        env["LD_LIBRARY_PATH"] = env["LD_LIBRARY_PATH_ORIG"]
-
-    kwargs: Dict[str, Any] = {
-        "stdout": log_file,
-        "stderr": subprocess.STDOUT,
-        "stdin": subprocess.DEVNULL,
-        "close_fds": True,
-        "env": env,
-    }
-
-    if sys.platform == "win32":
-        creationflags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-        kwargs["creationflags"] = creationflags
-    else:
-        kwargs["start_new_session"] = True
-
-    try:
-        proc = subprocess.Popen(cmd, **kwargs)
-    except Exception as e:
-        console.print(f"[bold red]✘ Failed to spawn background process:[/] {e}")
-        return
-
-    with console.status("[bold cyan]Starting StackCheck background service...", spinner="dots"):
-        start_time = time.time()
-        running_info = None
-        while time.time() - start_time < 15.0:
-            if proc.poll() is not None:
-                break
-            running_info = get_running_instance()
-            if running_info:
-                break
-            time.sleep(0.3)
-
-    if running_info:
-        url = running_info.get("url")
-        pid = running_info.get("pid")
-        console.print("[bold green]✔[/bold green] StackCheck background service started successfully.")
-        console.print(Panel(
-            f"[bold green]StackCheck Background Service Active[/bold green]\n\n"
-            f"  🌐 [bold white]Dashboard URL:[/]  [bold underline cyan]{url}[/]\n"
-            f"  🆔 [bold white]Process PID:[/]    [bold yellow]{pid}[/]\n"
-            f"  📝 [bold white]Logs:[/]           [dim]{log_file_path}[/]\n\n"
-            f"  [dim]Commands:[/] [bold cyan]stackcheck status[/] [dim]•[/] [bold magenta]stackcheck stop[/]",
-            border_style="green",
-            padding=(1, 2)
-        ))
-        safe_open_browser(url)
-    else:
-        console.print("[bold red]✘ Failed to verify StackCheck background service startup.[/]")
-        if log_file_path.exists():
-            try:
-                with open(log_file_path, "r", encoding="utf-8", errors="ignore") as f:
-                    lines = f.readlines()[-15:]
-                    if lines:
-                        console.print(Panel("".join(lines), title="[bold red]Startup Log Snippet[/]", border_style="red"))
-            except Exception:
-                pass
-        sys.exit(1)
-
-
-def launch(detach: bool = False):
+def launch():
     """Main launcher entrypoint."""
     from stackcheck import __version__
 
@@ -466,12 +386,7 @@ def launch(detach: bool = False):
         safe_open_browser(existing_url)
         return
 
-    # 2. Detached mode requested
-    if detach:
-        _launch_detached()
-        return
-
-    # 3. Locate target app.py
+    # 2. Locate target app.py
     target_script = locate_target_script()
     if not target_script:
         console.print("[bold red]✘ Error: Could not locate StackCheck app.py[/]")
