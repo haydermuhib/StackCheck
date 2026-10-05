@@ -14,9 +14,11 @@ StackCheck/
 ├── README.md                   # Project documentation & usage guide
 ├── PRESENTATION.md             # Technical methodology & slide deck
 ├── ARCHITECTURE.md             # Complete system architecture specification
-├── tests/                      # Automated Unit Test Suite (32 passing tests)
+├── tests/                      # Automated Unit Test Suite (35 passing tests)
 │   ├── test_analyzer.py        # Tests for segmentation, weighting & metrics
 │   ├── test_client.py          # Tests for client parsing & location normalizer
+│   ├── test_normalizer_relevance.py # Tests for strict role relevance filtering
+│   ├── test_salary_chart_robustness.py # Tests for sample size thresholds & collision-free layout
 │   ├── test_storage.py         # Tests for SQLite repository, projects & isolation
 │   ├── test_web.py             # Tests for Pandas conversions & Matplotlib charts
 │   ├── test_cli.py             # Tests for Rich CLI commands, flags & outputs
@@ -102,9 +104,13 @@ flowchart TD
 
 ### 🌐 Layer 1: Data Ingestion & Normalization (`src/stackcheck/client/`)
 - **`hiringcafe.py` (`HiringCafeClient`)**:
-  - Connects to HiringCafe's public search API using `curl_cffi` (`impersonate="chrome120"`) to reliably navigate TLS and anti-bot challenges.
+  - Connects to HiringCafe's public search API using `curl_cffi` (`impersonate="chrome124"`) to reliably navigate TLS handshakes and emulate standard browser behavior.
+  - **⚡ 98% Request Reduction (Batch SSR Harvesting)**: Rather than launching heavy headless Chromium/Selenium browser instances or navigating to 2,000 separate job URLs one-by-one, StackCheck intercepts Next.js `__NEXT_DATA__` server-side rendered payloads. Each single lightweight HTTP request returns **60 to 90 complete structured job profiles at once**. Collecting 2,000 jobs requires only ~25–30 requests in total.
+  - **⏱️ Human-Cadence Polite Pacing**: Sequential page requests are throttled with courtesy pauses (`time.sleep(0.35)`) over a single persistent HTTP connection. This keeps network activity identical to a human browsing search results, preventing any server strain or DDoS risk.
+  - **🔒 Zero-Re-scrape Architecture (100% Local Compute)**: Ingested jobs are stored in local SQLite. All subsequent skill extraction, NLP disambiguation, salary recalculations, filtering, and chart rendering happen **entirely offline on the user's local machine**—sending zero recurring network traffic to HiringCafe.
   - **Zero Synthetic Data Policy**: Returns exclusively real job posts. If no internet or empty results occur, reports transparent status messages rather than fabricating fake data.
 - **`normalizer.py` (`JobNormalizer`)**:
+  - **Strict Role Relevance Filtering (`is_role_relevant`)**: Tokenized role-class and term validator preventing unrelated roles (e.g. SRE, C++ low-latency infrastructure) from polluting niche search queries like Data Analyst.
   - **Location Synonym & Typo Mapping**: Maps abbreviations and common typos (`"PK"`, `"Lahore"`, `"Indai"`, `"Bangalore"`, `"NZ"`, `"Brasil"`, `"Amercia"`, `"UK"`, `"Tokyo"`, etc.) to canonical country names.
   - **Deterministic MD5 Fingerprinting**: Calculates `MD5(normalized_title | normalized_company | first_200_desc_chars)` to deduplicate postings across multiple scrape runs.
   - **Spam Filtering**: Drops scam listings, commission-only schemes, and descriptions shorter than 30 characters.
@@ -168,13 +174,13 @@ flowchart TD
   - Built strictly using **Matplotlib's Object-Oriented API (`fig, ax = plt.subplots(...)`)** and **Seaborn**:
     - **`plot_top_skills()`**: Horizontal bar chart with direct percentage text labels, dynamic limits, and clean spine removal (`sns.despine`).
     - **`plot_co_occurrence_heatmap()`**: Correlation matrix heatmap (`sns.heatmap`) with annotated frequencies and color gradients.
-    - **`plot_salary_by_tech()`**: Grouped salary error-bar chart displaying Min, Avg, and Max compensation with currency tick formatting.
+    - **`plot_salary_by_tech()`**: Grouped salary error-bar chart displaying Min, Avg, and Max compensation with sample-size protection (`min_samples >= 3` with graceful fallback for sparse sets), sample count annotations on Y-axis labels (`n=X`), collision-free text positioning, and dual sorting modes (Highest Average Salary vs. Sample Count / In-Demand).
     - **`plot_distributions()`**: Donut charts for workplace mode and bar plots for experience level.
     - **`plot_category_breakdown()`**: Domain comparison bar chart.
 - **`app.py`**:
   - 4-tab Streamlit dashboard:
     1. **📊 Executive Market Dashboard**: KPI metric cards, top skills chart with weighted score toggle, category breakdown, and project switcher.
-    2. **📈 Deep Statistical Analytics**: Co-occurrence heatmap, salary error-bars, workplace & experience distributions, regional partition table.
+    2. **📈 Deep Statistical Analytics**: Co-occurrence heatmap, interactive salary error-bars with sample thresholding & sorting toggles, workplace & experience distributions, regional partition table.
     3. **💼 Interactive Job Explorer**: Interactive Pandas DataFrame with text filter, skill dropdown, and expandable section breakdown cards.
     4. **🚀 Future Roadmap & Data Export**: Clean upcoming roadmap notice and 1-click download buttons for JSON, CSV, and Markdown.
 

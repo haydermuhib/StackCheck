@@ -61,6 +61,34 @@ StackCheck collects live job postings from HiringCafe, extracts requested techno
 
 ---
 
+## 💡 What StackCheck Delivers (That Job Boards Don't)
+
+Raw job boards like HiringCafe provide search lists, but job seekers and tech leaders cannot derive market intelligence from raw cards alone. StackCheck transforms raw job descriptions into structured, actionable market analytics:
+
+| Market Intelligence Dimension | Raw Job Board (e.g. HiringCafe) | StackCheck Intelligence Engine |
+| :--- | :---: | :---: |
+| **Skill Frequency & Demand Ranking** | ❌ None (raw cards only) | ✅ Top in-demand technologies ranked by market frequency % & weighted score |
+| **Section-Aware Priority Weighting** | ❌ None (treats all text identically) | ✅ Differentiates core **Requirements** ($1.8\times$) from general body text ($1.0\times$) |
+| **Tech Co-Occurrence & Synergies** | ❌ None | ✅ Seaborn correlation heatmaps revealing tool synergies (`SQL + Python`, `dbt + Snowflake`) |
+| **Salary Benchmarks & Error Bars** | ❌ Raw unvalidated numbers | ✅ Statistical Min, Avg, Max benchmarks with sample validation ($N \ge 3$) and confidence labels |
+| **Workplace Compensation Premium** | ❌ None | ✅ Automatic Remote vs. Hybrid vs. Onsite compensation spread analysis |
+| **Stack Density & Breadth Metrics** | ❌ None | ✅ Quantitative distribution of required skills per job posting |
+| **Cross-Market Research Workspaces** | ❌ None | ✅ Isolated multi-project research workspaces with historical search memory |
+| **Data Ownership & Portability** | ❌ Cloud-locked | ✅ 100% offline local SQLite storage with instant CSV, JSON, and Markdown export |
+
+---
+
+## 🛡️ Polite, Ethical & Ultralight Scraping Footprint
+
+StackCheck is engineered to be **safe, sustainable, and respectful** of origin job servers. It never overloads or abuses public infrastructure:
+
+- **⚡ 98% Request Reduction (Batch SSR Harvesting):** Unlike naive scrapers that spin up heavy headless browsers (Puppeteer/Selenium) and visit 2,000 individual job page URLs one-by-one, StackCheck ingests **60 to 90 complete, structured job records per single GET request** via Next.js `__NEXT_DATA__`. Collecting 2,000 jobs requires only ~25–30 total lightweight requests.
+- **⏱️ Human-Cadence Request Pacing:** Requests are throttled sequentially with built-in courtesy pauses (`time.sleep(0.35)`), mimicking a normal human user browsing search results. There is zero DDoS or server stress.
+- **🔒 Zero-Re-scrape Architecture (100% Local Compute):** Postings are saved directly into your local SQLite database (`~/.stackcheck/stackcheck.db`). All subsequent skill extraction, NLP disambiguation, salary recalculations, filtering, and chart re-rendering occur **entirely offline on your local machine**—sending zero recurring network traffic to HiringCafe.
+- **🛡️ Strict Role Relevance Filtering:** Tokenized validation prevents irrelevant roles (e.g. infrastructure/SRE roles mentioning "data") from polluting niche queries like Data Analyst.
+
+---
+
 ## 🏗️ System Architecture
 
 ```
