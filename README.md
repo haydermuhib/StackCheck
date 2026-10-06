@@ -15,7 +15,7 @@
   <a href="https://github.com/haydermuhib/StackCheck"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python" alt="Python 3.10+" /></a>
   <a href="https://streamlit.io"><img src="https://img.shields.io/badge/Streamlit-1.42%2B-FF4B4B?style=flat-square&logo=streamlit" alt="Streamlit" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License: MIT" /></a>
-  <a href="https://github.com/haydermuhib/StackCheck/releases"><img src="https://img.shields.io/badge/Version-0.1.9-cyan?style=flat-square" alt="v0.1.9" /></a>
+  <a href="https://github.com/haydermuhib/StackCheck/releases"><img src="https://img.shields.io/badge/Version-0.2.0-cyan?style=flat-square" alt="v0.2.0" /></a>
   <a href="https://github.com/haydermuhib/StackCheck"><img src="https://img.shields.io/badge/Architecture-Portable%20Binary-purple?style=flat-square" alt="Portable Binary" /></a>
 </p>
 
@@ -49,6 +49,16 @@ stackcheck
 ## Overview
 
 StackCheck collects live job listings from HiringCafe, extracts technical requirements with section-based weighting, and visualizes market statistics in a local Streamlit dashboard. It helps engineers and analysts evaluate technology demand, inspect skill combinations, and benchmark compensation across regional job markets.
+
+---
+
+## Web dashboard interface
+
+| Executive market overview | Geographic compensation distribution |
+| :---: | :---: |
+| [![Executive market overview](assets/screenshots/dashboard-executive.png)](assets/screenshots/dashboard-executive.png)<br><sub>Key metric cards, weighted tech skills frequency ranking, and domain category breakdown.</sub> | [![Geographic compensation distribution](assets/screenshots/dashboard-compensation.png)](assets/screenshots/dashboard-compensation.png)<br><sub>Country-level compensation strip scatter plot with horizontal median benchmarks.</sub> |
+| **Experience and employer analytics** | **Interactive job explorer** |
+| [![Experience and employer analytics](assets/screenshots/dashboard-experience.png)](assets/screenshots/dashboard-experience.png)<br><sub>Seniority skill differentials, compensation tier table, hiring employers, and stack complexity.</sub> | [![Interactive job explorer](assets/screenshots/dashboard-explorer.png)](assets/screenshots/dashboard-explorer.png)<br><sub>Searchable posting records with parsed salaries, normalized tech stacks, and direct apply links.</sub> |
 
 ---
 
@@ -242,6 +252,7 @@ pytest tests/
 | `stackcheck export --format all` | Export dataset to CSV, JSON, and Markdown |
 | `stackcheck update` | Update binary from GitHub Releases |
 | [index.html](index.html) | Landing page |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines and developer setup |
 | [LICENSE](LICENSE) | MIT License |
 
 ---

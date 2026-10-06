@@ -207,6 +207,29 @@ def main():
         color: #cbd5e1;
         margin-bottom: 3px;
     }
+    /* Metric card layout and top-right delta badge */
+    [data-testid="stMetric"] {
+        position: relative;
+    }
+    [data-testid="stMetric"]:has([data-testid="stMetricDelta"]) [data-testid="stMetricLabel"] {
+        padding-right: 110px;
+    }
+    [data-testid="stMetric"] div:has(> [data-testid="stMetricDelta"]) {
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 0 !important;
+        overflow: visible !important;
+    }
+    [data-testid="stMetric"] [data-testid="stMetricDelta"] {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        margin: 0 !important;
+        white-space: nowrap;
+        z-index: 2;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -259,14 +282,14 @@ def main():
         # Workspace actions with confirmation modals
         col_proj_a, col_proj_b = st.columns([1, 1])
         with col_proj_a:
-            if st.button("New project", icon=":material/add:", width="stretch", key="btn_open_new_proj_dlg"):
+            if st.button("New", icon=":material/add:", width="stretch", key="btn_open_new_proj_dlg"):
                 create_project_dialog()
         with col_proj_b:
             if active_project.id != "default":
-                if st.button("Delete project", icon=":material/delete:", width="stretch", key="btn_open_del_proj_dlg"):
+                if st.button("Delete", icon=":material/delete:", width="stretch", key="btn_open_del_proj_dlg"):
                     delete_project_dialog(active_project.id, active_project.name)
             else:
-                st.button("Default lock", icon=":material/lock:", disabled=True, width="stretch", help="The default workspace cannot be deleted.")
+                st.button("Default", icon=":material/lock:", disabled=True, width="stretch", help="The default workspace cannot be deleted.")
 
         # Display saved criteria for the currently selected project
         if active_project.last_keywords:

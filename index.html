@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StackCheck: Tech Stack Market Intelligence CLI</title>
-  <meta name="description" content="Open source CLI and market intelligence engine that extracts tech stack demand, salary distributions, and skill co-occurrence from live job postings.">
+  <title>StackCheck: Tech Stack Market Intelligence & Web GUI</title>
+  <meta name="description" content="Open source market intelligence engine and visual analytics dashboard that extracts tech stack demand, salary distributions, and skill co-occurrence from live job postings.">
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <link rel="alternate icon" type="image/png" href="assets/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -178,7 +178,7 @@
     }
 
     .brand-logo {
-      height: 26px;
+      height: 36px;
       width: auto;
       display: block;
     }
@@ -247,28 +247,6 @@
     .hero {
       padding: var(--space-16) 0 var(--space-12);
       text-align: center;
-    }
-
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-2);
-      padding: 4px 12px;
-      background: var(--brand-dim);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: var(--radius-full);
-      font-size: 0.8125rem;
-      font-weight: 600;
-      color: var(--brand-accent);
-      margin-bottom: var(--space-6);
-      letter-spacing: 0.02em;
-    }
-
-    .hero-badge .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--brand-accent);
     }
 
     .hero-title {
@@ -357,44 +335,88 @@
       border-color: var(--brand-accent);
     }
 
-    .hero-links {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-4);
-      flex-wrap: wrap;
-    }
-
     /* ========================================================
-       INTERACTIVE TERMINAL SIMULATOR
+       DASHBOARD SHOWCASE SECTION
        ======================================================== */
-    .terminal-section {
+    .dashboard-section {
       padding: var(--space-8) 0 var(--space-16);
     }
 
-    .terminal-window {
-      background: var(--bg-terminal);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-      overflow: hidden;
+    .dashboard-tabs {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+      overflow-x: auto;
+      padding-bottom: 4px;
     }
 
-    .terminal-topbar {
+    .dash-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      color: var(--text-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all var(--transition);
+      font-family: var(--font-display);
+    }
+
+    .dash-tab svg {
+      color: var(--text-muted);
+      transition: color var(--transition);
+      flex-shrink: 0;
+    }
+
+    .dash-tab:hover {
+      background: var(--bg-surface-raised);
+      color: var(--text-heading);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .dash-tab.active {
+      background: var(--bg-surface-raised);
+      color: var(--brand-accent);
+      border-color: var(--brand-accent);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+      font-weight: 600;
+    }
+
+    .dash-tab.active svg {
+      color: var(--brand-accent);
+    }
+
+    .dashboard-window {
+      background: #070a10;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+      margin-bottom: var(--space-8);
+    }
+
+    .dashboard-topbar {
       background: #0d121c;
       border-bottom: 1px solid var(--border-subtle);
-      padding: 10px 16px;
+      padding: 12px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      font-size: 0.8125rem;
     }
 
-    .terminal-dots {
+    .window-dots {
       display: flex;
       gap: 7px;
     }
 
-    .terminal-dot {
+    .window-dot {
       width: 11px;
       height: 11px;
       border-radius: 50%;
@@ -404,85 +426,162 @@
     .dot-min { background: #f59e0b; opacity: 0.8; }
     .dot-max { background: #10b981; opacity: 0.8; }
 
-    .terminal-tabs {
-      display: flex;
-      gap: var(--space-2);
-    }
-
-    .tab-btn {
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 0.8125rem;
-      font-family: var(--font-mono);
-      color: var(--text-muted);
-      background: transparent;
-      transition: all var(--transition);
-      border: 1px solid transparent;
-    }
-
-    .tab-btn:hover {
-      color: var(--text-body);
-      background: rgba(255, 255, 255, 0.04);
-    }
-
-    .tab-btn.active {
-      color: var(--brand-accent);
-      background: var(--bg-surface);
-      border-color: rgba(56, 189, 248, 0.3);
-      font-weight: 600;
-    }
-
-    .terminal-body {
-      padding: var(--space-6);
-      font-family: var(--font-mono);
-      font-size: 0.9rem;
-      line-height: 1.55;
-      color: var(--text-code);
-      min-height: 380px;
-      overflow-x: auto;
-    }
-
-    .cli-prompt-line {
+    .window-title {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: var(--space-4);
-      color: #94a3b8;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
     }
 
-    .cli-prompt-line .prompt-symbol {
+    .window-title-host {
       color: var(--brand-accent);
-      font-weight: 700;
-    }
-
-    .cli-command-text {
-      color: #f8fafc;
       font-weight: 600;
     }
 
-    .cli-output-view {
-      display: none;
+    .window-title-sep {
+      opacity: 0.4;
     }
 
-    .cli-output-view.active {
+    .window-title-name {
+      color: var(--text-body);
+    }
+
+    .window-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .window-status .status-dot {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .window-status .status-label {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .dashboard-content {
+      position: relative;
+      background: #090d16;
+      line-height: 0;
+    }
+
+    .dash-view {
+      display: none;
+      animation: fadeIn 0.25s ease forwards;
+    }
+
+    .dash-view.active {
       display: block;
     }
 
-    /* Output styling helpers */
-    .out-muted { color: #64748b; }
-    .out-cyan { color: #38bdf8; font-weight: 600; }
-    .out-green { color: #4ade80; }
-    .out-yellow { color: #fbbf24; }
-    .out-purple { color: #c084fc; }
-    .out-bold { color: #f8fafc; font-weight: 600; }
+    .dash-img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
 
-    .terminal-bar {
-      display: inline-block;
-      height: 8px;
-      background: #0284c7;
-      border-radius: 2px;
-      margin-right: 8px;
-      vertical-align: middle;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 2x2 Showcase Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-6);
+    }
+
+    .dash-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: var(--space-6);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .dash-card:hover {
+      background: var(--bg-surface-raised);
+      border-color: rgba(56, 189, 248, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .dash-card.active {
+      border-color: var(--brand-accent);
+      background: var(--bg-surface-raised);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.12);
+    }
+
+    .dash-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: var(--space-2);
+    }
+
+    .dash-card-num {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--brand-accent);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .dash-card-title {
+      font-family: var(--font-display);
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: var(--text-heading);
+    }
+
+    .dash-card-desc {
+      font-size: 0.875rem;
+      color: var(--text-body);
+      line-height: 1.6;
+      margin-bottom: var(--space-4);
+    }
+
+    .dash-card-thumb {
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background: #070a10;
+    }
+
+    .dash-card-thumb img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: opacity var(--transition);
+    }
+
+    .dash-card:hover .dash-card-thumb img {
+      opacity: 0.95;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+      .window-title-name {
+        display: none;
+      }
     }
 
     /* ========================================================
@@ -870,7 +969,7 @@
     }
 
     .footer-logo {
-      height: 22px;
+      height: 28px;
       width: auto;
     }
 
@@ -925,6 +1024,9 @@
       .nav-menu {
         display: none;
       }
+      .dashboard-tabs {
+        justify-content: flex-start;
+      }
       .footer-content {
         flex-direction: column;
         align-items: flex-start;
@@ -955,7 +1057,7 @@
       
       <ul class="nav-menu">
         <li class="nav-item"><a href="#features">Features</a></li>
-        <li class="nav-item"><a href="#terminal">Terminal</a></li>
+        <li class="nav-item"><a href="#dashboard">Dashboard</a></li>
         <li class="nav-item"><a href="#pipeline">Pipeline</a></li>
         <li class="nav-item"><a href="#install">Install</a></li>
         <li class="nav-item"><a href="#brand">Brand Kit</a></li>
@@ -978,17 +1080,12 @@
     <!-- HERO SECTION -->
     <section class="hero">
       <div class="container">
-        <div class="hero-badge">
-          <span class="status-dot"></span>
-          v0.1.9 &bull; Open Source CLI
-        </div>
-        
         <h1 class="hero-title">
           Real-time skill demand and salary benchmarks from <span>live tech jobs.</span>
         </h1>
         
         <p class="hero-description">
-          StackCheck queries HiringCafe, extracts technical requirements from raw job descriptions, weights required skills, and computes co-occurrence patterns directly in your terminal.
+          StackCheck queries HiringCafe, extracts technical requirements from raw job descriptions, weights required skills, and computes market intelligence in an interactive local dashboard.
         </p>
 
         <!-- QUICK INSTALL COMMAND -->
@@ -1002,125 +1099,141 @@
             <span id="hero-copy-text">Copy</span>
           </button>
         </div>
-
-        <div class="hero-links">
-          <a href="#terminal" class="btn btn-secondary">
-            Explore CLI Demo
-          </a>
-          <a href="#brand" class="btn btn-secondary">
-            Download Brand Identity Kit
-          </a>
-        </div>
       </div>
     </section>
 
-    <!-- INTERACTIVE TERMINAL SIMULATOR -->
-    <section class="terminal-section" id="terminal">
+    <!-- INTERACTIVE DASHBOARD SHOWCASE -->
+    <section class="dashboard-section" id="dashboard">
       <div class="container">
         <div class="section-header">
-          <span class="section-label">Interactive CLI Demo</span>
-          <h2 class="section-title">Run live market queries</h2>
+          <span class="section-label">Web Analytics GUI</span>
+          <h2 class="section-title">Visual tech market intelligence</h2>
           <p class="section-subtitle">
-            Switch tabs to inspect parsed requirements, weighted skill scores, and compensation spreads.
+            Inspect real-time skill demand, compensation benchmarks, seniority spreads, and job postings in an interactive local dashboard.
           </p>
         </div>
 
-        <div class="terminal-window">
-          <div class="terminal-topbar">
-            <div class="terminal-dots">
-              <span class="terminal-dot dot-close"></span>
-              <span class="terminal-dot dot-min"></span>
-              <span class="terminal-dot dot-max"></span>
-            </div>
+        <!-- DASHBOARD TABS -->
+        <div class="dashboard-tabs" role="tablist">
+          <button class="dash-tab active" role="tab" aria-selected="true" id="tab-exec" onclick="switchDashboardTab('exec')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span>Executive Dashboard</span>
+          </button>
+          <button class="dash-tab" role="tab" aria-selected="false" id="tab-comp" onclick="switchDashboardTab('comp')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Geographic Compensation</span>
+          </button>
+          <button class="dash-tab" role="tab" aria-selected="false" id="tab-exp" onclick="switchDashboardTab('exp')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Experience &amp; Employers</span>
+          </button>
+          <button class="dash-tab" role="tab" aria-selected="false" id="tab-explorer" onclick="switchDashboardTab('explorer')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            <span>Job Explorer</span>
+          </button>
+        </div>
 
-            <div class="terminal-tabs" role="tablist">
-              <button class="tab-btn active" role="tab" aria-selected="true" id="tab-data-eng" onclick="switchCliTab('data-eng')">
-                data-engineer
-              </button>
-              <button class="tab-btn" role="tab" aria-selected="false" id="tab-frontend" onclick="switchCliTab('frontend')">
-                frontend-react
-              </button>
-              <button class="tab-btn" role="tab" aria-selected="false" id="tab-compare" onclick="switchCliTab('compare')">
-                compare: fastapi vs django
-              </button>
+        <!-- MAIN MOCKUP WINDOW -->
+        <div class="dashboard-window">
+          <div class="dashboard-topbar">
+            <div class="window-dots">
+              <span class="window-dot dot-close"></span>
+              <span class="window-dot dot-min"></span>
+              <span class="window-dot dot-max"></span>
             </div>
-
-            <button class="copy-btn" onclick="copyCurrentTerminalCommand()" title="Copy active command" aria-label="Copy active CLI command">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              <span>Copy</span>
-            </button>
+            <div class="window-title">
+              <span class="window-title-host">localhost:8501</span>
+              <span class="window-title-sep">&bull;</span>
+              <span class="window-title-name">StackCheck: Tech Stack Market Intelligence</span>
+            </div>
+            <div class="window-status">
+              <span class="status-dot"></span>
+              <span class="status-label">Active Workspace</span>
+            </div>
           </div>
 
-          <div class="terminal-body">
-            <!-- TAB 1: DATA ENGINEER -->
-            <div id="cli-view-data-eng" class="cli-output-view active">
-              <div class="cli-prompt-line">
-                <span class="prompt-symbol">&gt;</span>
-                <span class="cli-command-text" id="cmd-text-data-eng">stackcheck query "data engineer" --country US --limit 50</span>
-              </div>
-              <div class="out-muted">Fetching 50 active postings from HiringCafe... [200 OK]</div>
-              <div class="out-muted">Parsing structured sections: Requirements (1.8x), Responsibilities (1.0x)</div>
-              <br>
-              <div class="out-cyan">&#9670; TOP DEMANDED SKILLS (Weighted Score &amp; Frequency)</div>
-              <div>----------------------------------------------------------------------</div>
-              <div><span class="out-bold">Python</span>     <span class="terminal-bar" style="width: 140px;"></span> 42/50 (84%)  <span class="out-green">score: 71.4</span>  <span class="out-muted">Co-occurs: SQL (91%), AWS (68%)</span></div>
-              <div><span class="out-bold">SQL</span>        <span class="terminal-bar" style="width: 132px;"></span> 40/50 (80%)  <span class="out-green">score: 68.0</span>  <span class="out-muted">Co-occurs: Snowflake (72%), dbt (54%)</span></div>
-              <div><span class="out-bold">Snowflake</span>  <span class="terminal-bar" style="width: 98px;"></span> 29/50 (58%)  <span class="out-green">score: 49.3</span>  <span class="out-muted">Co-occurs: dbt (64%), AWS (58%)</span></div>
-              <div><span class="out-bold">AWS</span>        <span class="terminal-bar" style="width: 92px;"></span> 27/50 (54%)  <span class="out-green">score: 45.9</span>  <span class="out-muted">Co-occurs: Terraform (48%), Spark (41%)</span></div>
-              <div><span class="out-bold">Spark</span>      <span class="terminal-bar" style="width: 78px;"></span> 23/50 (46%)  <span class="out-green">score: 39.1</span>  <span class="out-muted">Co-occurs: Python (95%), Kafka (52%)</span></div>
-              <div><span class="out-bold">dbt</span>        <span class="terminal-bar" style="width: 68px;"></span> 20/50 (40%)  <span class="out-green">score: 34.0</span>  <span class="out-muted">Co-occurs: Snowflake (80%), SQL (90%)</span></div>
-              <br>
-              <div class="out-cyan">&#9670; COMPENSATION BENCHMARK (USD Annual Base)</div>
-              <div>----------------------------------------------------------------------</div>
-              <div>25th Percentile: <span class="out-yellow">$135,000</span> | Median (P50): <span class="out-yellow">$158,500</span> | 75th Percentile: <span class="out-yellow">$185,000</span></div>
-              <div class="out-muted">Calculated from 38 postings listing valid compensation brackets.</div>
+          <div class="dashboard-content">
+            <!-- TAB 1: EXECUTIVE DASHBOARD -->
+            <div id="dash-view-exec" class="dash-view active">
+              <a href="assets/screenshots/dashboard-executive.png" target="_blank" rel="noopener noreferrer" title="Click to view full resolution">
+                <img src="assets/screenshots/dashboard-executive.png" alt="StackCheck Executive Dashboard" class="dash-img" loading="eager">
+              </a>
             </div>
 
-            <!-- TAB 2: FRONTEND -->
-            <div id="cli-view-frontend" class="cli-output-view">
-              <div class="cli-prompt-line">
-                <span class="prompt-symbol">&gt;</span>
-                <span class="cli-command-text" id="cmd-text-frontend">stackcheck query "frontend" --remote --limit 40</span>
-              </div>
-              <div class="out-muted">Fetching 40 remote postings from HiringCafe... [200 OK]</div>
-              <div class="out-muted">Segmenting post structure into mandatory requirements vs nice-to-haves</div>
-              <br>
-              <div class="out-cyan">&#9670; TOP DEMANDED SKILLS (Remote Frontend)</div>
-              <div>----------------------------------------------------------------------</div>
-              <div><span class="out-bold">TypeScript</span>  <span class="terminal-bar" style="width: 150px;"></span> 36/40 (90%)  <span class="out-green">score: 62.4</span>  <span class="out-muted">Co-occurs: React (94%), Next.js (61%)</span></div>
-              <div><span class="out-bold">React</span>       <span class="terminal-bar" style="width: 142px;"></span> 34/40 (85%)  <span class="out-green">score: 58.8</span>  <span class="out-muted">Co-occurs: TypeScript (97%), CSS (78%)</span></div>
-              <div><span class="out-bold">Next.js</span>     <span class="terminal-bar" style="width: 90px;"></span> 21/40 (52%)  <span class="out-green">score: 35.7</span>  <span class="out-muted">Co-occurs: React (100%), Tailwind (67%)</span></div>
-              <div><span class="out-bold">Tailwind</span>    <span class="terminal-bar" style="width: 76px;"></span> 18/40 (45%)  <span class="out-green">score: 29.8</span>  <span class="out-muted">Co-occurs: Next.js (72%), React (89%)</span></div>
-              <div><span class="out-bold">GraphQL</span>     <span class="terminal-bar" style="width: 58px;"></span> 14/40 (35%)  <span class="out-green">score: 23.8</span>  <span class="out-muted">Co-occurs: TypeScript (85%), Apollo (57%)</span></div>
-              <br>
-              <div class="out-cyan">&#9670; COMPENSATION BENCHMARK (USD Annual Base)</div>
-              <div>----------------------------------------------------------------------</div>
-              <div>25th Percentile: <span class="out-yellow">$120,000</span> | Median (P50): <span class="out-yellow">$142,000</span> | 75th Percentile: <span class="out-yellow">$165,000</span></div>
+            <!-- TAB 2: GEOGRAPHIC COMPENSATION -->
+            <div id="dash-view-comp" class="dash-view">
+              <a href="assets/screenshots/dashboard-compensation.png" target="_blank" rel="noopener noreferrer" title="Click to view full resolution">
+                <img src="assets/screenshots/dashboard-compensation.png" alt="StackCheck Geographic Compensation Distribution" class="dash-img" loading="lazy">
+              </a>
             </div>
 
-            <!-- TAB 3: COMPARE -->
-            <div id="cli-view-compare" class="cli-output-view">
-              <div class="cli-prompt-line">
-                <span class="prompt-symbol">&gt;</span>
-                <span class="cli-command-text" id="cmd-text-compare">stackcheck compare "fastapi" "django" --limit 100</span>
-              </div>
-              <div class="out-muted">Comparing skill co-occurrence across 100 recent Python backend roles</div>
-              <br>
-              <div class="out-cyan">&#9670; HEAD-TO-HEAD COMPARISON</div>
-              <div>----------------------------------------------------------------------</div>
-              <div>FastAPI mentions: <span class="out-bold">44</span>  (Section Weighted Score: 68.2)</div>
-              <div>Django mentions:  <span class="out-bold">36</span>  (Section Weighted Score: 52.8)</div>
-              <div>Both mentioned:   <span class="out-bold">14</span></div>
-              <br>
-              <div class="out-cyan">&#9670; CORRELATED ECOSYSTEM STACK</div>
-              <div>----------------------------------------------------------------------</div>
-              <div>FastAPI top co-occurrence: <span class="out-purple">Docker (78%)</span>, <span class="out-purple">PostgreSQL (74%)</span>, <span class="out-purple">Pydantic (66%)</span>, <span class="out-purple">AWS (59%)</span></div>
-              <div>Django top co-occurrence:  <span class="out-purple">PostgreSQL (82%)</span>, <span class="out-purple">Celery (61%)</span>, <span class="out-purple">Redis (58%)</span>, <span class="out-purple">Docker (54%)</span></div>
-              <br>
-              <div class="out-cyan">&#9670; MEDIAN SALARY COMPARISON</div>
-              <div>----------------------------------------------------------------------</div>
-              <div>FastAPI roles median: <span class="out-yellow">$152,000</span> USD</div>
-              <div>Django roles median:  <span class="out-yellow">$144,500</span> USD</div>
+            <!-- TAB 3: EXPERIENCE & EMPLOYERS -->
+            <div id="dash-view-exp" class="dash-view">
+              <a href="assets/screenshots/dashboard-experience.png" target="_blank" rel="noopener noreferrer" title="Click to view full resolution">
+                <img src="assets/screenshots/dashboard-experience.png" alt="StackCheck Experience and Employer Analytics" class="dash-img" loading="lazy">
+              </a>
+            </div>
+
+            <!-- TAB 4: JOB EXPLORER -->
+            <div id="dash-view-explorer" class="dash-view">
+              <a href="assets/screenshots/dashboard-explorer.png" target="_blank" rel="noopener noreferrer" title="Click to view full resolution">
+                <img src="assets/screenshots/dashboard-explorer.png" alt="StackCheck Interactive Job Explorer" class="dash-img" loading="lazy">
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2X2 SHOWCASE GRID BELOW WINDOW -->
+        <div class="dashboard-grid">
+          <div class="dash-card active" id="card-exec" onclick="switchDashboardTab('exec')">
+            <div class="dash-card-header">
+              <span class="dash-card-num">01</span>
+              <h3 class="dash-card-title">Executive Market Overview</h3>
+            </div>
+            <p class="dash-card-desc">
+              High-level KPI metrics, delta trend badges, section-weighted skill frequency rankings, and domain category breakdown.
+            </p>
+            <div class="dash-card-thumb">
+              <img src="assets/screenshots/dashboard-executive.png" alt="Executive Market Overview Thumbnail">
+            </div>
+          </div>
+
+          <div class="dash-card" id="card-comp" onclick="switchDashboardTab('comp')">
+            <div class="dash-card-header">
+              <span class="dash-card-num">02</span>
+              <h3 class="dash-card-title">Geographic Compensation</h3>
+            </div>
+            <p class="dash-card-desc">
+              Categorical strip plot with horizontal jitter showing individual posting salaries across countries with median benchmarks.
+            </p>
+            <div class="dash-card-thumb">
+              <img src="assets/screenshots/dashboard-compensation.png" alt="Geographic Compensation Thumbnail">
+            </div>
+          </div>
+
+          <div class="dash-card" id="card-exp" onclick="switchDashboardTab('exp')">
+            <div class="dash-card-header">
+              <span class="dash-card-num">03</span>
+              <h3 class="dash-card-title">Experience &amp; Employer Analytics</h3>
+            </div>
+            <p class="dash-card-desc">
+              Entry vs. senior skill expectation differentials, compensation bands table, hiring employer rankings, and stack density.
+            </p>
+            <div class="dash-card-thumb">
+              <img src="assets/screenshots/dashboard-experience.png" alt="Experience Analytics Thumbnail">
+            </div>
+          </div>
+
+          <div class="dash-card" id="card-explorer" onclick="switchDashboardTab('explorer')">
+            <div class="dash-card-header">
+              <span class="dash-card-num">04</span>
+              <h3 class="dash-card-title">Interactive Job Explorer</h3>
+            </div>
+            <p class="dash-card-desc">
+              Sortable and filterable data grid with extracted technology tags, standardized salaries, workplace modes, and direct links.
+            </p>
+            <div class="dash-card-thumb">
+              <img src="assets/screenshots/dashboard-explorer.png" alt="Job Explorer Thumbnail">
             </div>
           </div>
         </div>
@@ -1297,13 +1410,13 @@
           <!-- PANEL 2: WINDOWS -->
           <div id="inst-panel-win" class="install-panel">
             <div class="install-command-row">
-              <code id="cmd-install-win">irm https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.ps1 | iex</code>
+              <code id="cmd-install-win">curl.exe -L &quot;https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe&quot; -o StackCheck.exe; .\StackCheck.exe</code>
               <button class="copy-btn" onclick="copyInstallSnippet('cmd-install-win', this)" aria-label="Copy Windows install command">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 <span>Copy</span>
               </button>
             </div>
-            <p class="install-note">Downloads the Windows executable and places it in your user PATH.</p>
+            <p class="install-note">Downloads the standalone binary directly without dependencies. If SmartScreen prompts, select More info &gt; Run anyway.</p>
           </div>
 
           <!-- PANEL 3: PIP -->
@@ -1407,7 +1520,7 @@
 
         <ul class="footer-nav">
           <li><a href="#features">Features</a></li>
-          <li><a href="#terminal">Terminal</a></li>
+          <li><a href="#dashboard">Dashboard</a></li>
           <li><a href="#pipeline">Pipeline</a></li>
           <li><a href="#install">Install</a></li>
           <li><a href="#brand">Brand Kit</a></li>
@@ -1417,7 +1530,7 @@
 
       <div class="footer-bottom">
         <div>Released under the MIT License. Source code available on GitHub.</div>
-        <div>StackCheck Engine v0.1.9</div>
+        <div>StackCheck Engine v0.2.0</div>
       </div>
     </div>
   </footer>
@@ -1436,18 +1549,23 @@
       });
     }
 
-    // Terminal tab switcher
-    function switchCliTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(btn => {
+    // Dashboard tab & card switcher
+    function switchDashboardTab(tabId) {
+      document.querySelectorAll('.dash-tab').forEach(btn => {
         btn.classList.remove('active');
         btn.setAttribute('aria-selected', 'false');
       });
-      document.querySelectorAll('.cli-output-view').forEach(view => {
+      document.querySelectorAll('.dash-view').forEach(view => {
         view.classList.remove('active');
+      });
+      document.querySelectorAll('.dash-card').forEach(card => {
+        card.classList.remove('active');
       });
 
       const activeBtn = document.getElementById('tab-' + tabId);
-      const activeView = document.getElementById('cli-view-' + tabId);
+      const activeView = document.getElementById('dash-view-' + tabId);
+      const activeCard = document.getElementById('card-' + tabId);
+
       if (activeBtn) {
         activeBtn.classList.add('active');
         activeBtn.setAttribute('aria-selected', 'true');
@@ -1455,22 +1573,8 @@
       if (activeView) {
         activeView.classList.add('active');
       }
-    }
-
-    // Copy active terminal command
-    function copyCurrentTerminalCommand() {
-      const activeView = document.querySelector('.cli-output-view.active');
-      if (!activeView) return;
-      const cmdElem = activeView.querySelector('.cli-command-text');
-      if (cmdElem) {
-        navigator.clipboard.writeText(cmdElem.innerText).then(() => {
-          const btn = event.currentTarget;
-          const original = btn.innerHTML;
-          btn.innerHTML = '<span>Copied!</span>';
-          setTimeout(() => {
-            btn.innerHTML = original;
-          }, 1800);
-        });
+      if (activeCard) {
+        activeCard.classList.add('active');
       }
     }
 
