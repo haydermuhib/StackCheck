@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="app-ico-title">
+  <title id="app-ico-title">StackCheck App Icon</title>
+  <g id="symbol">
+    <!-- Top Stratum (Presentation / UI / Frontend) -->
+    <path fill="#38BDF8" d="M 92 44 H 212 V 84 H 88 V 92 H 44 V 84 L 84 44 Z"/>
+    <!-- Middle Stratum (Analytics / Logic / Backend) -->
+    <path fill="#0EA5E9" d="M 44 104 H 88 L 168 144 V 152 H 124 L 44 112 Z"/>
+    <!-- Bottom Stratum (Database / Infra Foundation) -->
+    <path fill="#0284C7" d="M 168 164 H 212 V 172 L 172 212 H 44 V 172 H 168 Z"/>
+  </g>
+</svg>
