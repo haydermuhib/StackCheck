@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="icon-title">
-  <title id="icon-title">StackCheck Icon</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="app-ico-title">
+  <title id="app-ico-title">StackCheck App Icon</title>
   <g id="symbol">
     <!-- Top Stratum (Presentation / UI / Frontend) -->
     <path fill="#38BDF8" d="M 92 44 H 212 V 84 H 88 V 92 H 44 V 84 L 84 44 Z"/>

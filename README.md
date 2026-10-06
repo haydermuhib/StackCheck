@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="StackCheck Logo" width="600" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo-light.svg">
+    <img src="assets/logo.svg" alt="StackCheck Logo" width="550" />
+  </picture>
 </p>
 
 <p align="center">

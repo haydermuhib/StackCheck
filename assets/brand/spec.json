@@ -1,0 +1,35 @@
+{
+  "brand": "StackCheck",
+  "tagline": "Tech Stack Market Intelligence Engine",
+  "brief": "Automated tech stack market intelligence engine and data analytics dashboard. Ingests live job postings from HiringCafe, maps multi-tier technology synergies and co-occurrence frequency, and benchmarks developer compensation.",
+  "adjectives": [
+    "architectural",
+    "analytical",
+    "precise",
+    "modern",
+    "authoritative"
+  ],
+  "criteria": "Success: unmistakably identifiable at 16 px, zero reliance on faux-3D clip art, scalable across CLI terminals and web dashboards, authoritative developer presence.",
+  "industry": "software",
+  "brand_color": "#0284C7",
+  "tile_color": "#0F172A",
+  "greyscale": false,
+  "final": true,
+  "designer": "Antigravity Identity Design",
+  "round": 1,
+  "concepts": [
+    {
+      "name": "Strata S",
+      "symbol": "stackcheck-symbol-color.svg",
+      "lockup": "stackcheck-lockup-dark.svg",
+      "avatar": "stackcheck-app-icon.svg",
+      "idea": "An architectural S monogram sculpted from three horizontal tech strata with dynamic 45° chamfers.",
+      "rationale": [
+        "Direct visual metaphor for the three tiers of modern tech stacks (UI, Logic, Infrastructure)",
+        "Precision 45° chamfered cuts evoke code syntax brackets and validation speed",
+        "Scores 100/100 in production geometry, scaling cleanly from 16 px favicons to terminal banners"
+      ]
+    }
+  ],
+  "recommendation": "Strata S delivers an iconic, lasting developer identity that unifies the web dashboard, CLI, and portable application binary."
+}
