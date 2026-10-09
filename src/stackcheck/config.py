@@ -5,6 +5,8 @@ Configuration and constants for StackCheck
 import os
 from pathlib import Path
 
+import sys
+
 # Paths
 WORKSPACE_DIR = Path(os.getcwd())
 try:
@@ -17,6 +19,33 @@ except (OSError, PermissionError):
     except Exception:
         pass
 
+
+def get_assets_dir() -> Path:
+    """Resolve the assets directory reliably across local dev, installed packages, user workspace, and PyInstaller bundles."""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        meipass_assets = Path(sys._MEIPASS) / "assets"
+        if meipass_assets.exists():
+            return meipass_assets
+
+    user_assets = DEFAULT_DATA_DIR / "assets"
+    if user_assets.exists() and (user_assets / "logo.png").exists():
+        return user_assets
+
+    repo_assets = Path(__file__).resolve().parent.parent.parent / "assets"
+    if repo_assets.exists():
+        return repo_assets
+
+    pkg_assets = Path(__file__).resolve().parent / "assets"
+    if pkg_assets.exists():
+        return pkg_assets
+
+    cwd_assets = Path.cwd() / "assets"
+    if cwd_assets.exists():
+        return cwd_assets
+
+    return repo_assets
+
+
 # Database & Exports in central user data directory (~/.stackcheck/)
 LOCAL_DB_PATH = Path(os.getenv("STACKCHECK_DB_PATH", DEFAULT_DATA_DIR / "stackcheck.db"))
 EXPORTS_DIR = Path(os.getenv("STACKCHECK_EXPORTS_DIR", DEFAULT_DATA_DIR / "exports"))
@@ -25,13 +54,6 @@ try:
 except Exception:
     pass
 
-# Central Community DB Sync endpoint (Mockable / Configurable for Supabase / REST hub)
-CENTRAL_HUB_URL = os.getenv("STACKCHECK_CENTRAL_HUB_URL", "https://api.stackcheck.community/v1")
-CENTRAL_HUB_ENABLED = os.getenv("STACKCHECK_CENTRAL_HUB_ENABLED", "true").lower() in ("true", "1", "yes")
-
-# LLM Configuration for deep description parsing
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # HiringCafe API Endpoints
 HIRINGCAFE_BASE_URL = "https://hiring.cafe"

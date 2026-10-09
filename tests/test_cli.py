@@ -21,6 +21,7 @@ def test_cli_help():
     assert "update" in result.output
     assert "web" not in main.commands
     assert "\n  web " not in result.output
+    assert "sync" not in main.commands
     assert "--detach" not in result.output
     assert "-d" not in result.output
 
@@ -75,7 +76,7 @@ def test_cli_projects_list():
 
 
 def test_launcher_config_sets_production_mode():
-    from stackcheck.launcher import launch
     # Verify that global.developmentMode is configured to False
+
     config.set_option("global.developmentMode", False)
     assert config.get_option("global.developmentMode") is False

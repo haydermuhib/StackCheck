@@ -12,13 +12,14 @@ import re
 import time
 import urllib.parse
 
-from stackcheck.models import JobPost, SearchQuery, WorkplaceType, ExperienceLevel, Region, SalaryInfo
+from stackcheck.models import JobPost, SearchQuery, WorkplaceType, ExperienceLevel, SalaryInfo
 from stackcheck.client.normalizer import JobNormalizer
 from stackcheck.analyzer.rule_extractor import RuleExtractor
-from stackcheck.analyzer.llm_extractor import LLMExtractor
-from stackcheck.config import HIRINGCAFE_BASE_URL, DEFAULT_USER_AGENT
+from stackcheck.config import DEFAULT_USER_AGENT
+
 
 logger = logging.getLogger(__name__)
+
 
 COUNTRY_TO_ISO2: Dict[str, str] = {
     "united states": "US",
@@ -59,9 +60,8 @@ COUNTRY_TO_ISO2: Dict[str, str] = {
 class HiringCafeClient:
     """Live HTTP Client for scraping and querying real job listings from HiringCafe."""
 
-    def __init__(self, use_llm_if_available: bool = False):
+    def __init__(self):
         self.rule_extractor = RuleExtractor()
-        self.llm_extractor = LLMExtractor() if use_llm_if_available else None
         self.last_error: Optional[str] = None
         self._init_session(impersonate="chrome124")
 
@@ -216,27 +216,16 @@ class HiringCafeClient:
                 salary = JobNormalizer.parse_salary(None, raw_desc)
 
             # Step 7: Section-aware Tech Stack & Bullet Extraction
-            skills = []
-            req_bullets = []
-            task_bullets = []
+            skills, req_bullets, task_bullets = self.rule_extractor.process_job_description(raw_desc)
+            # If tech_tools list is explicitly provided by HiringCafe, also match them
+            if isinstance(tech_tools, list) and tech_tools:
+                tools_text = "\n".join([f"• {t}" for t in tech_tools])
+                tool_skills = self.rule_extractor.extract_from_text(tools_text, section="requirements", base_weight=1.5)
+                seen_names = {s.canonical_name for s in skills}
+                for ts in tool_skills:
+                    if ts.canonical_name not in seen_names:
+                        skills.append(ts)
 
-            # Try LLM if configured and selected
-            if self.llm_extractor and self.llm_extractor.is_configured:
-                llm_res = self.llm_extractor.extract(title, company, raw_desc)
-                if llm_res:
-                    skills, req_bullets, task_bullets = llm_res
-
-            # Default Rule Extractor
-            if not skills:
-                skills, req_bullets, task_bullets = self.rule_extractor.process_job_description(raw_desc)
-                # If tech_tools list is explicitly provided by HiringCafe, also match them
-                if isinstance(tech_tools, list) and tech_tools:
-                    tools_text = "\n".join([f"• {t}" for t in tech_tools])
-                    tool_skills = self.rule_extractor.extract_from_text(tools_text, section="requirements", base_weight=1.5)
-                    seen_names = {s.canonical_name for s in skills}
-                    for ts in tool_skills:
-                        if ts.canonical_name not in seen_names:
-                            skills.append(ts)
 
             job_post = JobPost(
                 id=fp,

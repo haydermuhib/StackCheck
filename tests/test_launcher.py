@@ -4,7 +4,6 @@ Unit tests for Launcher and Updater utilities.
 
 from stackcheck.launcher import find_free_port
 from stackcheck.updater import UpdateChecker
-from stackcheck import __version__
 
 
 def test_find_free_port():

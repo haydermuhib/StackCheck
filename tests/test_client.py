@@ -2,16 +2,16 @@
 Tests for HiringCafe client and job ingestion pipeline.
 """
 
-from stackcheck.models import SearchQuery, JobPost, WorkplaceType, ExperienceLevel
 from stackcheck.client.hiringcafe import HiringCafeClient
 from stackcheck.client.normalizer import JobNormalizer
 from stackcheck.analyzer.rule_extractor import RuleExtractor
 
 
 def test_hiringcafe_client_structure():
-    client = HiringCafeClient(use_llm_if_available=False)
+    client = HiringCafeClient()
     assert client.session is not None
     assert client.rule_extractor is not None
+
 
 
 def test_hiringcafe_job_parsing():

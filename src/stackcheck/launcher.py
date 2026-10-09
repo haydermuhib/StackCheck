@@ -211,22 +211,27 @@ def locate_target_script() -> Optional[str]:
                 if not persistent_charts.exists() or persistent_charts.read_text(encoding="utf-8") != charts_content:
                     persistent_charts.write_text(charts_content, encoding="utf-8")
 
+            source_dialogs = source_app.parent / "dialogs.py"
+            if source_dialogs.exists():
+                persistent_dialogs = target_dir / "dialogs.py"
+                dialogs_content = source_dialogs.read_text(encoding="utf-8")
+                if not persistent_dialogs.exists() or persistent_dialogs.read_text(encoding="utf-8") != dialogs_content:
+                    persistent_dialogs.write_text(dialogs_content, encoding="utf-8")
+
+            source_tabs = source_app.parent / "tabs"
+            if source_tabs.exists() and source_tabs.is_dir():
+                target_tabs = target_dir / "tabs"
+                target_tabs.mkdir(parents=True, exist_ok=True)
+                for tab_file in source_tabs.glob("*.py"):
+                    dest_tab = target_tabs / tab_file.name
+                    tab_content = tab_file.read_text(encoding="utf-8")
+                    if not dest_tab.exists() or dest_tab.read_text(encoding="utf-8") != tab_content:
+                        dest_tab.write_text(tab_content, encoding="utf-8")
+
             # Also ensure assets (logo, icon) are mirrored to STACKCHECK_DIR/assets
-            source_assets = None
-            if hasattr(sys, "_MEIPASS"):
-                p_mei = Path(sys._MEIPASS) / "assets"
-                if p_mei.exists():
-                    source_assets = p_mei
-            if not source_assets:
-                for candidate_asset in [
-                    BASE_DIR / "assets",
-                    source_app.parent.parent.parent.parent / "assets",
-                    source_app.parent.parent / "assets",
-                    Path.cwd() / "assets"
-                ]:
-                    if candidate_asset.exists():
-                        source_assets = candidate_asset
-                        break
+            from stackcheck.config import get_assets_dir
+            source_assets = get_assets_dir()
+
 
             if source_assets and source_assets.exists():
                 target_assets_dir = STACKCHECK_DIR / "assets"

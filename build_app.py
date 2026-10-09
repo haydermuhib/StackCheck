@@ -4,11 +4,11 @@ Uses PyInstaller to bundle StackCheck into a single standalone binary with embed
 """
 
 import sys
-import os
 import platform
 import argparse
 import subprocess
 from pathlib import Path
+
 
 ROOT_DIR = Path(__file__).resolve().parent
 SRC_DIR = ROOT_DIR / "src"
@@ -81,6 +81,10 @@ def build(onefile: bool = True):
         "--hidden-import=stackcheck",
         "--hidden-import=stackcheck.web.app",
         "--hidden-import=stackcheck.web.charts",
+        "--hidden-import=stackcheck.web.dialogs",
+        "--hidden-import=stackcheck.web.tabs.dashboard",
+        "--hidden-import=stackcheck.web.tabs.analytics",
+        "--hidden-import=stackcheck.web.tabs.jobs",
         "--hidden-import=streamlit.runtime.scriptrunner.magic_funcs",
         # 1. Exclude test suites
         "--exclude-module=pandas.tests",

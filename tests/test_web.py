@@ -6,14 +6,15 @@ import matplotlib
 matplotlib.use("Agg")  # Non-interactive backend for tests
 import matplotlib.pyplot as plt
 
-from stackcheck.models import JobPost, SearchQuery, Region, WorkplaceType, ExperienceLevel, ExtractedSkill, TechCategory, SalaryInfo
+from stackcheck.models import JobPost, Region, WorkplaceType, ExperienceLevel, ExtractedSkill, TechCategory, SalaryInfo
 from stackcheck.analyzer.metrics import MetricsEngine
 from stackcheck.web.charts import (
     plot_top_skills,
     plot_co_occurrence_heatmap,
     plot_salary_by_tech,
     plot_distributions,
-    plot_category_breakdown
+    plot_category_breakdown,
+    plot_stack_density_distribution
 )
 
 
@@ -70,6 +71,11 @@ def test_dataframe_conversions():
     assert not df_skills.empty
     assert "Skill" in df_skills.columns
     assert "Market Demand %" in df_skills.columns
+
+    # Test JobPost.salary_usd_estimate computed property
+    assert jobs[0].salary_usd_estimate == 170000.0
+    assert jobs[1].salary_usd_estimate == 120000.0
+
 
 
 def test_charts_generation():
@@ -141,5 +147,23 @@ def test_plot_salary_by_tech_sorting_options():
     fig_by_samples = plot_salary_by_tech(stats, min_samples=1, sort_by="sample_count")
     assert fig_by_samples is not None
     plt.close(fig_by_samples)
+
+
+def test_plot_stack_density_distribution_with_string_keys():
+    """Verify that JSON-deserialized string keys do not cause TypeError in plot_stack_density_distribution."""
+    # JSON deserialization turns int dictionary keys into strings
+    density_stats = {
+        "avg_skills_per_job": 3.2,
+        "median_skills": 3,
+        "max_skills": 6,
+        "distribution": {"1": 4, "2": 8, "4": 12, "0": 0, "invalid": "skip"}
+    }
+    fig = plot_stack_density_distribution(density_stats)
+    assert fig is not None
+    plt.close(fig)
+
+    # Empty distribution returns None
+    assert plot_stack_density_distribution({"distribution": {}}) is None
+
 
 

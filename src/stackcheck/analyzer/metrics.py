@@ -8,11 +8,12 @@ Analytics and Metrics Aggregator:
 """
 
 import statistics
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 from collections import Counter, defaultdict
 from itertools import combinations
-from stackcheck.models import JobPost, AggregatedStats, SkillCoOccurrence, GeoTechBreakdown, Region, WorkplaceType, TechCategory
+from stackcheck.models import JobPost, AggregatedStats, SkillCoOccurrence, GeoTechBreakdown, Region
 from stackcheck.analyzer.currency import currency_manager
+
 
 
 class MetricsEngine:
@@ -319,13 +320,7 @@ class MetricsEngine:
             sal_str = "Not Disclosed"
             sal_usd = None
             if j.salary:
-                raw_amt = j.salary.max_amount or j.salary.min_amount or 0
-                usd_amt = currency_manager.convert_to_usd(
-                    raw_amt,
-                    currency=j.salary.currency,
-                    country=j.country or j.location,
-                    period=j.salary.period
-                )
+                usd_amt = j.salary_usd_estimate
                 if usd_amt > 0:
                     sal_usd = round(usd_amt, 0)
                 if (j.salary.currency or "USD").upper() != "USD" and usd_amt > 0:

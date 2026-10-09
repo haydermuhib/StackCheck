@@ -9,7 +9,7 @@ Job Normalizer & Data Cleaning Pipeline:
 import re
 import hashlib
 import difflib
-from typing import Optional, Tuple, Dict, Any, List
+from typing import Optional, Tuple, Dict, Any
 from stackcheck.models import Region, WorkplaceType, ExperienceLevel, SalaryInfo
 from stackcheck.analyzer.taxonomy import COUNTRY_TO_REGION
 

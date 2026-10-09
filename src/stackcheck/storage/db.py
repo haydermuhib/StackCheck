@@ -66,12 +66,12 @@ CREATE TABLE IF NOT EXISTS job_skills (
     FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS community_sync_log (
-    id TEXT PRIMARY KEY,
-    sync_type TEXT NOT NULL,
-    status TEXT NOT NULL,
-    records_synced INTEGER DEFAULT 0,
-    synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS project_analytics_cache (
+    project_id TEXT PRIMARY KEY,
+    stats_json TEXT NOT NULL,
+    job_count INTEGER NOT NULL,
+    calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
 """
 
@@ -82,6 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_jobs_region ON jobs(region);
 CREATE INDEX IF NOT EXISTS idx_jobs_workplace ON jobs(workplace_type);
 CREATE INDEX IF NOT EXISTS idx_job_skills_canonical ON job_skills(canonical_name);
 CREATE INDEX IF NOT EXISTS idx_job_skills_category ON job_skills(category);
+CREATE INDEX IF NOT EXISTS idx_analytics_cache_project ON project_analytics_cache(project_id);
 """
 
 

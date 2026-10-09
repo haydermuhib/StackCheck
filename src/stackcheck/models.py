@@ -8,6 +8,8 @@ from enum import Enum
 from pydantic import BaseModel, Field, model_validator
 from datetime import datetime, timezone
 
+from stackcheck.analyzer.currency import currency_manager
+
 
 class WorkplaceType(str, Enum):
     REMOTE = "remote"
@@ -131,6 +133,20 @@ class JobPost(BaseModel):
     @property
     def link(self) -> str:
         return self.apply_url or self.url or ""
+
+    @property
+    def salary_usd_estimate(self) -> float:
+        """Estimated annual compensation normalized to USD."""
+        if not self.salary:
+            return 0.0
+        amt = self.salary.max_amount or self.salary.min_amount or 0.0
+        return currency_manager.convert_to_usd(
+            amt,
+            currency=self.salary.currency,
+            country=self.country or self.location,
+            period=self.salary.period
+        )
+
 
 
 class SearchQuery(BaseModel):

@@ -11,7 +11,8 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 
-from stackcheck.models import AggregatedStats, JobPost
+from stackcheck.models import AggregatedStats
+
 
 
 # Dark slate design system tokens (unified single-tone background)
@@ -89,8 +90,8 @@ def plot_top_skills(stats: AggregatedStats, top_n: int = 15, use_weighted: bool 
 
     metric_name = "Section-Weighted Demand" if use_weighted else "Job Market Demand (% of Postings)"
     ax.set_title(f"Top {len(df)} Demanded Tech Skills ({metric_name})", fontsize=13, fontweight="bold", pad=16, color=TEXT_TITLE)
-    ax.set_xlabel("Market Frequency / Requirement Weight (%)", fontsize=10, fontweight="semibold", color=TEXT_LABEL)
-    ax.set_ylabel("Technology", fontsize=10, fontweight="semibold", color=TEXT_LABEL)
+    ax.set_xlabel("Market Frequency / Requirement Weight (%)", fontsize=10, fontweight="bold", color=TEXT_LABEL)
+    ax.set_ylabel("Technology", fontsize=10, fontweight="bold", color=TEXT_LABEL)
     
     ax.set_xlim(0, max_val * 1.22)
     ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=100, decimals=0))
@@ -145,11 +146,11 @@ def plot_co_occurrence_heatmap(stats: AggregatedStats, top_n: int = 10) -> Optio
     if ax.collections and ax.collections[0].colorbar:
         cbar = ax.collections[0].colorbar
         cbar.ax.tick_params(colors=TEXT_TICK, labelsize=8.5)
-        cbar.set_label("Postings Mentioning Both Technologies", color=TEXT_LABEL, fontsize=9.5, fontweight="semibold")
+        cbar.set_label("Postings Mentioning Both Technologies", color=TEXT_LABEL, fontsize=9.5, fontweight="bold")
         cbar.outline.set_edgecolor(SPINE_COLOR)
 
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", fontsize=9.5, fontweight="semibold", color=TEXT_TICK)
-    plt.setp(ax.get_yticklabels(), rotation=0, fontsize=9.5, fontweight="semibold", color=TEXT_TICK)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", fontsize=9.5, fontweight="bold", color=TEXT_TICK)
+    plt.setp(ax.get_yticklabels(), rotation=0, fontsize=9.5, fontweight="bold", color=TEXT_TICK)
     
     fig.tight_layout()
     return fig
@@ -242,7 +243,7 @@ def plot_salary_by_tech(
     # Include sample size in tick labels
     formatted_labels = [f"{row['Skill']}  (n={int(row['Samples'])})" for _, row in df.iterrows()]
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(formatted_labels, fontsize=9.5, fontweight="semibold", color=TEXT_TICK)
+    ax.set_yticklabels(formatted_labels, fontsize=9.5, fontweight="bold", color=TEXT_TICK)
     ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"${x*1e-3:,.0f}k"))
     
     max_x_val = max(df["Max Salary"].max(), df["Avg Salary"].max())
@@ -251,7 +252,7 @@ def plot_salary_by_tech(
     
     # Title with generous top padding to prevent legend collision
     ax.set_title("Salary Benchmarks by Technology (USD / Yr)", fontsize=13, fontweight="bold", pad=16, color=TEXT_TITLE)
-    ax.set_xlabel("Compensation ($ USD)", fontsize=10, fontweight="semibold", color=TEXT_LABEL)
+    ax.set_xlabel("Compensation ($ USD)", fontsize=10, fontweight="bold", color=TEXT_LABEL)
     
     # Place legend cleanly below x-axis to prevent collision with title or data
     leg = ax.legend(
@@ -329,7 +330,7 @@ def plot_distributions(stats: AggregatedStats) -> Tuple[Optional[plt.Figure], Op
         max_h = max(exp_values) if exp_values else 10
         ax_exp.set_ylim(0, max_h * 1.25)
         ax_exp.set_title("Experience Level Breakdown", fontsize=11.5, fontweight="bold", pad=12, color=TEXT_TITLE)
-        ax_exp.set_ylabel("Job Postings Count", fontsize=9.5, fontweight="semibold", color=TEXT_LABEL)
+        ax_exp.set_ylabel("Job Postings Count", fontsize=9.5, fontweight="bold", color=TEXT_LABEL)
         plt.setp(ax_exp.get_xticklabels(), rotation=20, ha="right", fontsize=8.5, color=TEXT_TICK)
         
         _apply_chart_theme(fig_exp, ax_exp, grid_axis="y")
@@ -374,7 +375,7 @@ def plot_category_breakdown(stats: AggregatedStats) -> Optional[plt.Figure]:
 
     ax.set_xlim(0, max_w * 1.20)
     ax.set_title("Aggregate Skill Mentions by Domain Category", fontsize=12.5, fontweight="bold", pad=14, color=TEXT_TITLE)
-    ax.set_xlabel("Total Frequency across Postings", fontsize=9.5, fontweight="semibold", color=TEXT_LABEL)
+    ax.set_xlabel("Total Frequency across Postings", fontsize=9.5, fontweight="bold", color=TEXT_LABEL)
     
     _apply_chart_theme(fig, ax, grid_axis="x")
     fig.tight_layout()
@@ -457,8 +458,8 @@ def plot_salary_by_country_scatter(country_salary_data: List[dict], color_by: st
         )
 
     ax.set_title("Annual Compensation Distribution by Country ($k USD)", fontsize=13, fontweight="bold", pad=16, color=TEXT_TITLE)
-    ax.set_xlabel("Country / Region (Sorted by Median)", fontsize=10, fontweight="semibold", color=TEXT_LABEL)
-    ax.set_ylabel("Annual Salary ($k USD)", fontsize=10, fontweight="semibold", color=TEXT_LABEL)
+    ax.set_xlabel("Country / Region (Sorted by Median)", fontsize=10, fontweight="bold", color=TEXT_LABEL)
+    ax.set_ylabel("Annual Salary ($k USD)", fontsize=10, fontweight="bold", color=TEXT_LABEL)
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"${int(x)}k"))
 
     plt.setp(ax.get_xticklabels(), rotation=rot_angle, ha="right", fontsize=9, fontweight="medium", color=TEXT_TICK)
@@ -527,7 +528,7 @@ def plot_top_hiring_companies(companies_data: List[dict], top_n: int = 10) -> Op
         )
 
     ax.set_title(f"Top {len(df)} Actively Hiring Employers", fontsize=12.5, fontweight="bold", pad=16, color=TEXT_TITLE)
-    ax.set_xlabel("Open Positions Found", fontsize=9.5, fontweight="semibold", color=TEXT_LABEL)
+    ax.set_xlabel("Open Positions Found", fontsize=9.5, fontweight="bold", color=TEXT_LABEL)
     ax.set_xlim(0, max_count * 1.55)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
@@ -569,11 +570,11 @@ def plot_experience_skill_matrix(experience_skills_breakdown: dict) -> Optional[
     ax.barh(y + height/2, df["Entry (%)"], height, label="Entry Roles", color="#10B981", alpha=0.9, zorder=3)
 
     ax.set_yticks(y)
-    ax.set_yticklabels(df["Skill"], fontsize=9.5, fontweight="semibold", color=TEXT_TICK)
+    ax.set_yticklabels(df["Skill"], fontsize=9.5, fontweight="bold", color=TEXT_TICK)
     ax.invert_yaxis()
 
     ax.set_title("Skill Expectations: Entry-Level vs Senior Roles", fontsize=12.5, fontweight="bold", pad=14, color=TEXT_TITLE)
-    ax.set_xlabel("Demand Frequency (%) in Level Postings", fontsize=9.5, fontweight="semibold", color=TEXT_LABEL)
+    ax.set_xlabel("Demand Frequency (%) in Level Postings", fontsize=9.5, fontweight="bold", color=TEXT_LABEL)
     ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=100))
     
     leg = ax.legend(
@@ -599,12 +600,22 @@ def plot_stack_density_distribution(stack_density_stats: dict) -> Optional[plt.F
     if not dist:
         return None
 
-    sorted_counts = sorted(dist.items(), key=lambda x: x[0])
-    x_vals = [k for k, _ in sorted_counts if k > 0][:15]
-    y_vals = [v for k, v in sorted_counts if k > 0][:15]
+    cleaned_items = []
+    for k, v in dist.items():
+        try:
+            int_k = int(k)
+            int_v = int(v)
+            if int_k > 0 and int_v > 0:
+                cleaned_items.append((int_k, int_v))
+        except (ValueError, TypeError):
+            continue
 
-    if not x_vals:
+    if not cleaned_items:
         return None
+
+    sorted_counts = sorted(cleaned_items, key=lambda x: x[0])
+    x_vals = [k for k, _ in sorted_counts][:15]
+    y_vals = [v for _, v in sorted_counts][:15]
 
     fig, ax = plt.subplots(figsize=(8.5, 4.2), dpi=150)
     bars = ax.bar(x_vals, y_vals, color="#6366F1", width=0.68, edgecolor="#818CF8", alpha=0.9, zorder=3)
@@ -632,8 +643,8 @@ def plot_stack_density_distribution(stack_density_stats: dict) -> Optional[plt.F
     max_y = max(y_vals) if y_vals else 10
     ax.set_ylim(0, max_y * 1.25)
     ax.set_title("Stack Complexity: Required Technologies per Posting", fontsize=12.5, fontweight="bold", pad=14, color=TEXT_TITLE)
-    ax.set_xlabel("Distinct Required Skills Count", fontsize=9.5, fontweight="semibold", color=TEXT_LABEL)
-    ax.set_ylabel("Number of Postings", fontsize=9.5, fontweight="semibold", color=TEXT_LABEL)
+    ax.set_xlabel("Distinct Required Skills Count", fontsize=9.5, fontweight="bold", color=TEXT_LABEL)
+    ax.set_ylabel("Number of Postings", fontsize=9.5, fontweight="bold", color=TEXT_LABEL)
     ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
     _apply_chart_theme(fig, ax, grid_axis="y")

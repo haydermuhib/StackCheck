@@ -280,3 +280,53 @@ def test_get_all_jobs_beyond_500_limit():
         assert len(fetched) == 550
 
 
+def test_project_analytics_cache():
+    """Verify persistent caching of AggregatedStats in SQLite, hit/miss detection, and invalidation."""
+    with safe_temp_dir() as tmpdir:
+        db_file = Path(tmpdir) / "test_cache.db"
+        db_mgr = DatabaseManager(db_path=db_file)
+        repo = JobRepository(db_manager=db_mgr)
+
+        # Initially no cache
+        assert repo.get_cached_stats("proj_test", expected_job_count=5) is None
+
+        # Create dummy job and stats
+        job = JobPost(
+            id="c_job_1",
+            title="Data Scientist",
+            company="DeepMind",
+            location="Remote",
+            project_id="proj_test",
+            extracted_skills=[
+                ExtractedSkill(name="Python", canonical_name="Python", category=TechCategory.PROGRAMMING_LANGUAGES),
+                ExtractedSkill(name="PyTorch", canonical_name="PyTorch", category=TechCategory.AI_ML)
+            ]
+        )
+        repo.save_jobs([job], project_id="proj_test")
+        stats = MetricsEngine.aggregate([job], query_keywords="Data Scientist")
+
+        # Save to cache with count 1
+        repo.save_cached_stats("proj_test", stats, job_count=1)
+
+        # Cache hit when expected count is 1
+        cached = repo.get_cached_stats("proj_test", expected_job_count=1)
+        assert cached is not None
+        assert cached.total_jobs == 1
+        assert cached.query_keywords == "Data Scientist"
+        assert any(s["skill"] == "Python" for s in cached.top_skills_overall)
+
+        # Cache miss when expected count does not match (e.g. 2 jobs now exist)
+        assert repo.get_cached_stats("proj_test", expected_job_count=2) is None
+
+        # Explicit invalidation
+        repo.invalidate_cached_stats("proj_test")
+        assert repo.get_cached_stats("proj_test", expected_job_count=1) is None
+
+        # Re-save and test clear_project_jobs invalidation
+        repo.save_cached_stats("proj_test", stats, job_count=1)
+        assert repo.get_cached_stats("proj_test", expected_job_count=1) is not None
+        repo.clear_project_jobs("proj_test")
+        assert repo.get_cached_stats("proj_test", expected_job_count=1) is None
+
+
+

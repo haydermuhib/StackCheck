@@ -4,7 +4,6 @@ Provides commands for searching, analyzing, exporting, and launching the Web Das
 """
 
 import sys
-import os
 
 # Ensure safe UTF-8 output encoding on Windows consoles
 if sys.platform == "win32":
@@ -26,11 +25,11 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
 
 from stackcheck import __version__
-from stackcheck.models import SearchQuery, WorkplaceType, ExperienceLevel, Region
+from stackcheck.models import SearchQuery, WorkplaceType, ExperienceLevel
+
 from stackcheck.client.hiringcafe import HiringCafeClient
 from stackcheck.analyzer.metrics import MetricsEngine
 from stackcheck.storage.repository import JobRepository
-from stackcheck.storage.sync import CommunitySyncClient
 from stackcheck.storage.exporters import ReportExporter
 
 console = Console(legacy_windows=False)
@@ -205,8 +204,7 @@ def update(yes):
 @click.option("--limit", "-n", default=25, help="Number of job postings to analyze.")
 @click.option("--project", "-P", default="default", help="Project ID or name to scope this research to.")
 @click.option("--export", "-x", type=click.Choice(["json", "csv", "md", "none"]), default="none", help="Export results to file.")
-@click.option("--use-llm", is_flag=True, default=False, help="Use LLM for deep extraction (requires GEMINI_API_KEY or OPENAI_API_KEY).")
-def search(keywords, location, workplace, experience, limit, project, export, use_llm):
+def search(keywords, location, workplace, experience, limit, project, export):
     """Scrape and analyze jobs for specific keywords and filters."""
     workplace_enum = WorkplaceType(workplace) if workplace != "any" else None
     exp_enum = ExperienceLevel(experience) if experience != "any" else None
@@ -235,7 +233,8 @@ def search(keywords, location, workplace, experience, limit, project, export, us
         padding=(1, 2)
     ))
 
-    client = HiringCafeClient(use_llm_if_available=use_llm)
+    client = HiringCafeClient()
+
 
     with Progress(
         SpinnerColumn(),
@@ -421,30 +420,6 @@ def delete_project(project_id):
     repo = JobRepository()
     repo.delete_project(project_id)
     console.print(f"[bold green]✔ Deleted project '{project_id}'[/]")
-
-
-@main.command()
-def sync():
-    """Sync telemetry and pull global community benchmark statistics."""
-    sync_client = CommunitySyncClient()
-    benchmarks = sync_client.fetch_community_benchmarks()
-
-    console.print(Panel(
-        f"[bold cyan]🌐 StackCheck Community Benchmark Hub[/]\n"
-        f"Total Community Jobs Dataset: [green]{benchmarks.get('total_community_jobs', 0):,}[/] | "
-        f"Last Baseline Updated: [yellow]{benchmarks.get('last_updated', 'N/A')}[/]",
-        border_style="cyan"
-    ))
-
-    table = Table(title="Global Top Demanded Technologies (Community Baseline)", border_style="green")
-    table.add_column("Rank", justify="right", style="dim")
-    table.add_column("Skill", style="bold white")
-    table.add_column("Category", style="cyan")
-    table.add_column("Global Demand %", justify="right", style="green")
-
-    for idx, item in enumerate(benchmarks.get("top_skills_global", []), 1):
-        table.add_row(str(idx), item["skill"], item["category"], f"{item['percentage']}%")
-    console.print(table)
 
 
 if __name__ == "__main__":

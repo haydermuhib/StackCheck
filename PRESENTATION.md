@@ -5,7 +5,7 @@
 **Duration:** 25 minutes  
 **Audience:** Engineers, Data Analysts, Product Leaders, and Technical Recruiters  
 **Date:** 2026-10-05  
-**Version:** v0.2.0  
+**Version:** v0.2.1  
 
 ---
 
@@ -232,4 +232,4 @@ StackCheck provides a multi-tab web dashboard built with Streamlit, Matplotlib, 
 
 - **GitHub repository:** [haydermuhib/StackCheck](https://github.com/haydermuhib/StackCheck)
 - **Data source:** [HiringCafe](https://hiring.cafe)
-- **Current version:** v0.2.0
+- **Current version:** v0.2.1

@@ -2,4 +2,4 @@
 StackCheck: Job Market Tech Stack Intelligence Engine & Interactive TUI
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"

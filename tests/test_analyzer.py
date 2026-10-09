@@ -2,8 +2,8 @@
 Unit tests for StackCheck Analyzer, RuleExtractor, and MetricsEngine.
 """
 
-import pytest
 from stackcheck.models import JobPost, ExtractedSkill, Region, WorkplaceType, ExperienceLevel, TechCategory
+
 from stackcheck.analyzer.rule_extractor import RuleExtractor, segment_job_description
 from stackcheck.client.normalizer import JobNormalizer
 from stackcheck.analyzer.metrics import MetricsEngine

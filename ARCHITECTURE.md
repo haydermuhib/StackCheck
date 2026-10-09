@@ -30,13 +30,11 @@ StackCheck/
     ├── analyzer/               # Section-aware data analysis engine
     │   ├── taxonomy.py         # 100+ technologies across 9 domain categories
     │   ├── rule_extractor.py   # Requirements (1.8x) vs responsibilities (1.2x)
-    │   ├── llm_extractor.py    # Optional Gemini or OpenAI enrichment
     │   ├── currency.py         # Currency normalizer and daily exchange rate sync
     │   └── metrics.py          # Co-occurrence, salary statistics, and Pandas DataFrames
     ├── storage/                # Storage and export layer
     │   ├── db.py               # SQLite schema (projects, search runs, jobs, skills)
     │   ├── repository.py       # Project-scoped data access layer
-    │   ├── sync.py             # Community benchmark aggregator
     │   └── exporters.py        # CSV, JSON, and Markdown report exporters
     ├── web/                    # Streamlit web dashboard layer
     │   ├── app.py              # Interactive web analytics dashboard
@@ -135,8 +133,6 @@ flowchart TD
   - Analyzes job description structure. Prioritizes candidate requirement sections over general company overviews.
   - **Positional multipliers**:
     $$\text{Bullet 1} = 1.8\times \quad\mid\quad \text{Bullet 2} = 1.5\times \quad\mid\quad \text{Bullet 3} = 1.3\times \quad\mid\quad \text{Responsibilities} = 1.2\times \quad\mid\quad \text{Body} = 1.0\times$$
-- **`llm_extractor.py` (`LLMExtractor`)**:
-  - Optional zero-shot extractor supporting Google Gemini (`gemini-1.5-flash`) and OpenAI (`gpt-4o-mini`).
 - **`metrics.py` (`MetricsEngine`)**:
   - Aggregates market metrics:
     - Overall skill frequency and weighted demand score.
@@ -160,8 +156,6 @@ flowchart TD
   - Multi-project isolation through foreign keys (`project_id`).
 - **`repository.py` (`JobRepository`)**:
   - Data access layer providing save, query, project CRUD, search run logging, and cached job retrieval.
-- **`sync.py` (`CommunitySyncClient`)**:
-  - Local aggregation engine tracking real data distributions.
 - **`exporters.py` (`ReportExporter`)**:
   - Generates:
     - `JSON` full schema dump (`exports/stackcheck_run_*.json`).
@@ -196,7 +190,7 @@ flowchart TD
   - **Console encoding**: Configures standard streams on Windows consoles to prevent encoding errors with Unicode checkmarks and tables.
 - **`cli.py`**:
   - Click CLI styled with Rich tables and panels.
-  - Commands: `stackcheck`, `stackcheck check`, `stackcheck status`, `stackcheck stop`, `stackcheck update`, `stackcheck search`, `stackcheck analyze`, `stackcheck export`, `stackcheck projects`, and `stackcheck sync`.
+  - Commands: `stackcheck`, `stackcheck check`, `stackcheck status`, `stackcheck stop`, `stackcheck update`, `stackcheck search`, `stackcheck analyze`, `stackcheck export`, and `stackcheck projects`.
 - **`updater.py`**:
   - In-place updater querying GitHub Releases API.
   - Detects system architecture, downloads updates with progress indicators, and applies executable permissions.
@@ -223,46 +217,64 @@ flowchart TD
 │ id           TEXT PRIMARY KEY   │
 │ name         TEXT NOT NULL      │
 │ description  TEXT               │
-│ created_at   DATETIME           │
+│ created_at   TIMESTAMP          │
+│ updated_at   TIMESTAMP          │
 └─────────────────────────────────┘
-          │ 1               │ 1
-          │                 │
-          │ *               │ *
-┌─────────────────────────────────┐       ┌─────────────────────────────────┐
-│          search_runs            │       │              jobs               │
-├─────────────────────────────────┼───────┼─────────────────────────────────┤
-│ id           INTEGER PK AUTOINC │ 1   * │ id           TEXT PRIMARY KEY   │
-│ project_id   TEXT FK            │───────│ project_id   TEXT FK            │
-│ query_str    TEXT NOT NULL      │       │ search_run_id INTEGER FK        │
-│ location     TEXT               │       │ title        TEXT NOT NULL      │
-│ workplace    TEXT               │       │ company      TEXT NOT NULL      │
-│ experience   TEXT               │       │ location     TEXT               │
-│ total_jobs   INTEGER            │       │ country      TEXT               │
-│ created_at   DATETIME           │       │ region       TEXT               │
-└─────────────────────────────────┘       │ workplace    TEXT               │
-                                          │ experience   TEXT               │
-                                          │ salary_min   REAL               │
-                                          │ salary_max   REAL               │
-                                          │ salary_curr  TEXT               │
-                                          │ salary_period TEXT              │
-                                          │ apply_url    TEXT               │
-                                          │ scraped_at   DATETIME           │
-                                          └─────────────────────────────────┘
-                                                           │ 1
-                                                           │
-                                                           │ *
-                                          ┌─────────────────────────────────┐
-                                          │        extracted_skills         │
-                                          ├─────────────────────────────────┤
-                                          │ id           INTEGER PK AUTOINC │
-                                          │ job_id       TEXT NOT NULL FK   │
-                                          │ name         TEXT NOT NULL      │
-                                          │ canonical    TEXT NOT NULL      │
-                                          │ category     TEXT NOT NULL      │
-                                          │ source_sec   TEXT               │
-                                          │ priority_wt  REAL               │
-                                          └─────────────────────────────────┘
+          │ 1               │ 1               │ 1
+          │                 │                 │
+          │ *               │ *               │ 1 (cached)
+┌───────────────────┐ ┌───────────────────┐ ┌───────────────────────────┐
+│   search_runs     │ │       jobs        │ │ project_analytics_cache   │
+├───────────────────┤ ├───────────────────┤ ├───────────────────────────┤
+│ id        TEXT PK │ │ id        TEXT PK │ │ project_id TEXT PK (FK)   │
+│ project_id TEXT FK│ │ project_id TEXT FK│ │ stats_json  TEXT NOT NULL │
+│ keywords  TEXT    │ │ search_run_id TEXT│ │ job_count   INTEGER       │
+│ location  TEXT    │ │ title     TEXT    │ │ calculated_at TIMESTAMP   │
+│ region    TEXT    │ │ company   TEXT    │ └───────────────────────────┘
+│ workplace TEXT    │ │ location  TEXT    │
+│ experience TEXT   │ │ country   TEXT    │
+│ query_limit INT   │ │ region    TEXT    │
+│ total_found INT   │ │ workplace TEXT    │
+│ created_at  TS    │ │ experience TEXT   │
+└───────────────────┘ │ salary_min REAL   │
+                      │ salary_max REAL   │
+                      │ salary_currency TX│
+                      │ salary_period TEXT│
+                      │ url       TEXT    │
+                      │ description TEXT  │
+                      │ source    TEXT    │
+                      │ scraped_at TS     │
+                      └───────────────────┘
+                                │ 1
+                                │
+                                │ *
+                      ┌───────────────────┐
+                      │    job_skills     │
+                      ├───────────────────┤
+                      │ id        INT PK  │
+                      │ job_id    TEXT FK │
+                      │ name      TEXT    │
+                      │ canonical TEXT    │
+                      │ category  TEXT    │
+                      │ source_sec TEXT   │
+                      │ priority_wt REAL  │
+                      │ context_snippet TX│
+                      └───────────────────┘
 ```
+
+### Table specifications
+1. **`projects`**: Top-level workspace container. Isolates search history and job corpora. Default workspace ID is `'default'`.
+2. **`search_runs`**: Historical query execution log per project (`keywords`, `location`, `workplace_type`, `experience_level`, `query_limit`, `total_found`).
+3. **`jobs`**: Normalized job postings scoped by `project_id`. Stores metadata, parsed compensation ranges, workplace type, and regional classifications. Cascade-deleted if project is removed.
+4. **`job_skills`**: Granular extracted technologies parsed from posting descriptions with contextual priority weighting (1.8x for requirements vs 1.2x for responsibilities). Cascade-deleted on job deletion.
+5. **`project_analytics_cache`**: High-performance persistent JSON cache for precomputed `AggregatedStats`. Keyed by `project_id` and invalidated if `job_count` changes, enabling instantaneous workspace switching.
+
+### Performance indexes
+- `idx_jobs_project`: Fast workspace job filtering.
+- `idx_search_runs_project`: Project search history lookup.
+- `idx_jobs_region` & `idx_jobs_workplace`: Dashboard faceted slice filtering.
+- `idx_job_skills_canonical` & `idx_job_skills_category`: Accelerated co-occurrence and category rollups.
+- `idx_analytics_cache_project`: Direct O(1) analytics retrieval on project switches.
 
 ---
 
@@ -279,7 +291,7 @@ flowchart TD
 
 ## 6. Test suite and verification
 
-The automated test suite contains 36 unit tests validating data ingestion, parsing, weighting, SQLite operations, multi-project isolation, DataFrame conversions, Matplotlib chart rendering, CLI commands, and launcher lifecycle management:
+The automated test suite contains 38 unit tests validating data ingestion, parsing, weighting, SQLite operations, multi-project isolation, DataFrame conversions, Matplotlib chart rendering, CLI commands, and launcher lifecycle management:
 
 ```bash
 pytest tests/ -v

@@ -58,7 +58,7 @@ pytest tests/test_analyzer.py
 pytest tests/test_web.py
 ```
 
-All 36 tests must pass without warnings or failures.
+All 38 tests must pass without warnings or failures.
 
 ## Project layout
 
@@ -70,6 +70,24 @@ The source code lives inside `src/stackcheck`:
 - `web/`: Streamlit analytics UI, Matplotlib and Seaborn dark charts, and dialog modals.
 - `cli.py`: Click command line interface and background process launcher.
 - `tests/`: Unit and integration test suite covering ingestion, normalization, charts, and storage.
+
+## Database schema and migrations
+
+StackCheck persists user workspaces, scraped postings, and precalculated analytics in an embedded SQLite database at `~/.stackcheck/stackcheck.db` (configured via `LOCAL_DB_PATH` in `src/stackcheck/config.py`).
+
+### Relational tables
+- **`projects`**: Top-level workspace container (`id`, `name`, `description`, `created_at`, `updated_at`).
+- **`search_runs`**: Historical query log (`id`, `project_id`, `keywords`, `location`, `workplace_type`, `experience_level`, `query_limit`, `total_found`).
+- **`jobs`**: Normalized job postings scoped by `project_id`. Foreign key references `projects(id)` with `ON DELETE CASCADE`.
+- **`job_skills`**: Normalized skills extracted per job with contextual weighting. Foreign key references `jobs(id)` with `ON DELETE CASCADE`.
+- **`project_analytics_cache`**: Precomputed `AggregatedStats` JSON cache keyed by `project_id` and verified against `job_count` for instant workspace switching.
+
+### Modifying the schema
+1. Schema DDL is maintained in `SCHEMA_SQL` and `INDEXES_SQL` in `src/stackcheck/storage/db.py`.
+2. Connection lifecycle and non-destructive column migrations are managed in `DatabaseManager.init_db()`.
+3. Foreign keys are strictly enforced on every connection (`PRAGMA foreign_keys = ON`).
+4. For full visual diagrams and performance index details, see [ARCHITECTURE.md](ARCHITECTURE.md#4-sqlite-database-schema-and-workspace-storage).
+
 
 ## Submitting changes
 

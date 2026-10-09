@@ -5,7 +5,7 @@
 ## Project Overview
 
 - **Repository**: [haydermuhib/StackCheck](https://github.com/haydermuhib/StackCheck)
-- **Version**: `v0.2.0`
+- **Version**: `v0.2.1`
 - **License**: MIT
 - **Runtime**: Python 3.10+
 - **Primary Tech Stack**: Streamlit, Matplotlib OOP, Seaborn, Pandas, SQLite, `curl_cffi`, Click, Rich.

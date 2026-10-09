@@ -3,10 +3,17 @@ Repository for CRUD operations on Jobs, Search Runs, and Extracted Skills.
 """
 
 import uuid
+from collections import defaultdict
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from stackcheck.models import JobPost, ExtractedSkill, SearchQuery, SalaryInfo, Region, WorkplaceType, ExperienceLevel, TechCategory, Project
+from stackcheck.models import JobPost, ExtractedSkill, SearchQuery, SalaryInfo, Region, WorkplaceType, ExperienceLevel, TechCategory, Project, AggregatedStats
 from stackcheck.storage.db import DatabaseManager
+
+VALID_CATEGORIES = {c.value for c in TechCategory}
+VALID_REGIONS = {reg.value for reg in Region}
+VALID_WORKPLACES = {w.value for w in WorkplaceType}
+VALID_EXPERIENCES = {e.value for e in ExperienceLevel}
+
 
 
 class JobRepository:
@@ -143,11 +150,12 @@ class JobRepository:
             return True
 
     def clear_project_jobs(self, project_id: str):
-        """Clear all jobs and search runs from a specific project."""
+        """Clear all jobs and search runs from a specific project and invalidate cached analytics."""
         with self.db.get_connection() as conn:
             conn.execute("DELETE FROM job_skills WHERE job_id IN (SELECT id FROM jobs WHERE project_id = ?)", (project_id,))
             conn.execute("DELETE FROM jobs WHERE project_id = ?", (project_id,))
             conn.execute("DELETE FROM search_runs WHERE project_id = ?", (project_id,))
+            conn.execute("DELETE FROM project_analytics_cache WHERE project_id = ?", (project_id,))
             conn.commit()
 
     # ------------------ JOB & SEARCH OPERATIONS ------------------
@@ -282,36 +290,63 @@ class JobRepository:
 
         with self.db.get_connection() as conn:
             rows = conn.execute(query_sql, params).fetchall()
+            if not rows:
+                return []
+
+            job_ids = [r["id"] for r in rows]
+            skills_by_job = defaultdict(list)
+
+            # Batch fetch all skills in chunks of 500 to eliminate N+1 queries
+            for i in range(0, len(job_ids), 500):
+                chunk = job_ids[i:i + 500]
+                placeholders = ",".join("?" for _ in chunk)
+                chunk_skills = conn.execute(
+                    f"SELECT job_id, name, canonical_name, category, source_section, priority_weight, context_snippet FROM job_skills WHERE job_id IN ({placeholders})",
+                    chunk
+                ).fetchall()
+                for sr in chunk_skills:
+                    cat_val = sr["category"]
+                    cat_enum = TechCategory(cat_val) if cat_val in VALID_CATEGORIES else TechCategory.OTHER
+                    skills_by_job[sr["job_id"]].append(
+                        ExtractedSkill(
+                            name=sr["name"],
+                            canonical_name=sr["canonical_name"],
+                            category=cat_enum,
+                            source_section=sr["source_section"],
+                            priority_weight=sr["priority_weight"],
+                            context_snippet=sr["context_snippet"]
+                        )
+                    )
+
             jobs = []
             for r in rows:
                 job_id = r["id"]
-                # Fetch skills for this job
-                skill_rows = conn.execute("SELECT * FROM job_skills WHERE job_id = ?", (job_id,)).fetchall()
-                skills = [
-                    ExtractedSkill(
-                        name=sr["name"],
-                        canonical_name=sr["canonical_name"],
-                        category=TechCategory(sr["category"]) if sr["category"] in [c.value for c in TechCategory] else TechCategory.OTHER,
-                        source_section=sr["source_section"],
-                        priority_weight=sr["priority_weight"],
-                        context_snippet=sr["context_snippet"]
-                    )
-                    for sr in skill_rows
-                ]
+                skills = skills_by_job.get(job_id, [])
 
+                sal_min = r["salary_min"]
+                sal_max = r["salary_max"]
                 salary = None
-                if r["salary_min"] or r["salary_max"]:
+                if sal_min is not None or sal_max is not None:
                     salary = SalaryInfo(
-                        min_amount=r["salary_min"],
-                        max_amount=r["salary_max"],
-                        currency=r["salary_currency"],
-                        period=r["salary_period"]
+                        min_amount=sal_min,
+                        max_amount=sal_max,
+                        currency=r["salary_currency"] or "USD",
+                        period=r["salary_period"] or "yearly"
                     )
 
                 clean_id = job_id
                 prefix = f"{r['project_id']}_"
                 if clean_id.startswith(prefix):
                     clean_id = clean_id[len(prefix):]
+
+                reg_val = r["region"]
+                reg_enum = Region(reg_val) if reg_val in VALID_REGIONS else Region.OTHER
+
+                wp_val = r["workplace_type"]
+                wp_enum = WorkplaceType(wp_val) if wp_val in VALID_WORKPLACES else WorkplaceType.UNKNOWN
+
+                exp_val = r["experience_level"]
+                exp_enum = ExperienceLevel(exp_val) if exp_val in VALID_EXPERIENCES else ExperienceLevel.MID
 
                 jobs.append(JobPost(
                     id=clean_id,
@@ -321,9 +356,9 @@ class JobRepository:
                     company=r["company"],
                     location=r["location"],
                     country=r["country"],
-                    region=Region(r["region"]) if r["region"] in [reg.value for reg in Region] else Region.OTHER,
-                    workplace_type=WorkplaceType(r["workplace_type"]) if r["workplace_type"] in [w.value for w in WorkplaceType] else WorkplaceType.UNKNOWN,
-                    experience_level=ExperienceLevel(r["experience_level"]) if r["experience_level"] in [e.value for e in ExperienceLevel] else ExperienceLevel.MID,
+                    region=reg_enum,
+                    workplace_type=wp_enum,
+                    experience_level=exp_enum,
                     salary=salary,
                     description=r["description"],
                     url=r["url"],
@@ -356,6 +391,51 @@ class JobRepository:
             conn.execute("DELETE FROM job_skills")
             conn.execute("DELETE FROM jobs")
             conn.execute("DELETE FROM search_runs")
+            conn.execute("DELETE FROM project_analytics_cache")
             conn.commit()
+
+    # ------------------ ANALYTICS CACHE OPERATIONS ------------------
+    def get_cached_stats(self, project_id: str, expected_job_count: int) -> Optional[AggregatedStats]:
+        """
+        Fetch pre-calculated analytics for a project if the job count matches.
+        Returns AggregatedStats on cache hit, or None on cache miss/stale data.
+        """
+        with self.db.get_connection() as conn:
+            row = conn.execute(
+                "SELECT stats_json, job_count FROM project_analytics_cache WHERE project_id = ?",
+                (project_id,)
+            ).fetchone()
+            if not row:
+                return None
+            if row["job_count"] != expected_job_count:
+                return None
+            try:
+                return AggregatedStats.model_validate_json(row["stats_json"])
+            except Exception:
+                return None
+
+    def save_cached_stats(self, project_id: str, stats: AggregatedStats, job_count: int):
+        """Persist calculated analytics JSON for a project."""
+        stats_json = stats.model_dump_json()
+        with self.db.get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO project_analytics_cache (project_id, stats_json, job_count, calculated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(project_id) DO UPDATE SET
+                    stats_json = excluded.stats_json,
+                    job_count = excluded.job_count,
+                    calculated_at = CURRENT_TIMESTAMP
+                """,
+                (project_id, stats_json, job_count)
+            )
+            conn.commit()
+
+    def invalidate_cached_stats(self, project_id: str):
+        """Explicitly clear the cached analytics for a project."""
+        with self.db.get_connection() as conn:
+            conn.execute("DELETE FROM project_analytics_cache WHERE project_id = ?", (project_id,))
+            conn.commit()
+
 
 

@@ -3,7 +3,7 @@ Section-aware Rule-based Skill Extractor with Priority Weighting and Disambiguat
 """
 
 import re
-from typing import List, Tuple, Dict, Any, Optional
+from typing import List, Tuple, Dict, Any
 from stackcheck.models import ExtractedSkill, TechCategory
 from stackcheck.analyzer.taxonomy import CANONICAL_TAXONOMY
 
