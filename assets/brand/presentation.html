@@ -1,8 +1,15 @@
-<!doctype html><html lang='en'><head><meta charset='utf-8'><title>StackCheck — final identity</title><style>
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>StackCheck — final identity</title><style>
 :root{--ink:#161616;--muted:#6b6b6b;--line:#e6e6e2;--paper:#f7f7f4}
-*{box-sizing:border-box}body{margin:0;background:#dcdcd6;font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
-.slide{width:1280px;min-height:720px;margin:28px auto;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.12);padding:56px 64px 70px;position:relative;overflow:hidden}
-.slide h1{font-size:44px;margin:0 0 8px;letter-spacing:-.02em}.slide h2{font-size:30px;margin:0 0 6px;letter-spacing:-.01em}
+*{box-sizing:border-box}body{margin:0;background:#dcdcd6;font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);overflow-x:hidden}
+.slide{width:1280px;max-width:100%;min-height:720px;margin:28px auto;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.12);padding:56px 64px 70px;position:relative;overflow:hidden}
+@media (max-width: 1300px) {
+  .slide{width:100%;min-height:auto;margin:12px auto;padding:28px 18px 40px}
+  .hero{grid-template-columns:1fr;gap:20px}
+  .stage{height:260px}
+  .mock{grid-template-columns:1fr}
+  .foot{position:static;margin-top:24px;padding-top:12px;border-top:1px solid var(--line)}
+}
+.slide h1{font-size:clamp(26px, 5vw, 44px);margin:0 0 8px;letter-spacing:-.02em}.slide h2{font-size:clamp(20px, 4vw, 30px);margin:0 0 6px;letter-spacing:-.01em}
 .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
 .idea{font-size:22px;max-width:900px;margin:6px 0 18px}.muted{color:var(--muted)}
 .foot{position:absolute;left:64px;right:64px;bottom:24px;display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
