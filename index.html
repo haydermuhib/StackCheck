@@ -336,6 +336,89 @@
     }
 
     /* ========================================================
+       PRODUCT LAUNCH VIDEO WALKTHROUGH SECTION
+       ======================================================== */
+    .video-section {
+      padding: var(--space-8) 0 var(--space-12);
+    }
+
+    .video-window {
+      background: #070a10;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(56, 189, 248, 0.12);
+      overflow: hidden;
+      margin: 0 auto var(--space-6);
+      max-width: 1040px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .video-window:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.8), 0 0 45px rgba(56, 189, 248, 0.2);
+    }
+
+    .video-topbar {
+      background: #0d121c;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
+
+    .video-container video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      border: none;
+    }
+
+    .video-chapters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+    }
+
+    .video-chip {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9999px;
+      padding: 6px 14px;
+      font-size: 0.8125rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .video-chip:hover {
+      color: var(--brand-accent);
+      border-color: var(--brand-accent);
+      background: var(--bg-surface-raised);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.18);
+    }
+
+    .video-chip span {
+      color: var(--brand-accent);
+      font-weight: 600;
+    }
+
+    /* ========================================================
        DASHBOARD SHOWCASE SECTION
        ======================================================== */
     .dashboard-section {
@@ -1401,6 +1484,7 @@
       </a>
       
       <ul class="nav-menu">
+        <li class="nav-item"><a href="#walkthrough">Walkthrough</a></li>
         <li class="nav-item"><a href="#features">Features</a></li>
         <li class="nav-item"><a href="#dashboard">Dashboard</a></li>
         <li class="nav-item"><a href="#pipeline">Pipeline</a></li>
@@ -1428,6 +1512,7 @@
     <!-- Mobile Drawer Navigation -->
     <nav class="mobile-nav" id="mobile-nav-drawer" aria-label="Mobile navigation">
       <ul class="mobile-nav-list">
+        <li><a href="#walkthrough" onclick="closeMobileNav()">Walkthrough</a></li>
         <li><a href="#features" onclick="closeMobileNav()">Features</a></li>
         <li><a href="#dashboard" onclick="closeMobileNav()">Dashboard</a></li>
         <li><a href="#pipeline" onclick="closeMobileNav()">Pipeline</a></li>
@@ -1468,6 +1553,66 @@
           <button class="copy-btn" id="hero-copy-btn" onclick="copyHeroCommand()" aria-label="Copy installation command">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             <span id="hero-copy-text">Copy</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUCT LAUNCH VIDEO WALKTHROUGH SECTION -->
+    <section class="video-section" id="walkthrough">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">Official Launch Video</span>
+          <h2 class="section-title">StackCheck in 30 seconds</h2>
+          <p class="section-subtitle">
+            See how live job postings turn into real-time skill demand, compensation curves, and framework pairings.
+          </p>
+        </div>
+
+        <div class="video-window">
+          <div class="video-topbar">
+            <div class="window-dots">
+              <span class="window-dot dot-close"></span>
+              <span class="window-dot dot-min"></span>
+              <span class="window-dot dot-max"></span>
+            </div>
+            <div class="window-title">
+              <span class="window-title-host">stackcheck-launch-1080p.mp4</span>
+              <span class="window-title-sep">&bull;</span>
+              <span class="window-title-name">31s Full HD Walkthrough</span>
+            </div>
+            <div class="window-status">
+              <span class="status-indicator"></span>
+              <span>1080p @ 30fps</span>
+            </div>
+          </div>
+          <div class="video-container">
+            <video id="launch-video" controls preload="metadata" poster="assets/video/poster.png">
+              <source src="assets/video/stackcheck-launch.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+
+        <!-- VIDEO CHAPTER CHIPS -->
+        <div class="video-chapters" aria-label="Video key moments">
+          <button class="video-chip" onclick="seekVideo(0)" title="Jump to Hook">
+            <span>0:00</span> The Question
+          </button>
+          <button class="video-chip" onclick="seekVideo(4.2)" title="Jump to Market Noise">
+            <span>0:04</span> Market Noise
+          </button>
+          <button class="video-chip" onclick="seekVideo(8.2)" title="Jump to Meet StackCheck">
+            <span>0:08</span> Meet StackCheck
+          </button>
+          <button class="video-chip" onclick="seekVideo(15.2)" title="Jump to Telemetry & Salaries">
+            <span>0:15</span> Salary &amp; Skill Telemetry
+          </button>
+          <button class="video-chip" onclick="seekVideo(22.5)" title="Jump to Zero Cloud / Local">
+            <span>0:22</span> Zero Cloud / Local CLI
+          </button>
+          <button class="video-chip" onclick="seekVideo(27.8)" title="Jump to Outro & GitHub">
+            <span>0:28</span> GitHub &amp; Install
           </button>
         </div>
       </div>
@@ -1918,6 +2063,15 @@
           btnText.innerText = 'Copy';
         }, 2000);
       });
+    }
+
+    // Video chapter seeking helper
+    function seekVideo(seconds) {
+      const video = document.getElementById('launch-video');
+      if (video) {
+        video.currentTime = seconds;
+        video.play().catch(() => {});
+      }
     }
 
     // Dashboard tab & card switcher

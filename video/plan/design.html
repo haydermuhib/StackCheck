@@ -1,0 +1,103 @@
+<!doctype html>
+<!--
+  DESIGN FILE (visual style board) — Motion Video Director.
+  StackCheck Launch Video. Shows: concept, colours, typography, live motion demos, sound, do/don't.
+-->
+<html lang="en"><head><meta charset="utf-8"><title>StackCheck Video Design File</title>
+<script>
+const DESIGN = {
+  project: "StackCheck", version: "v1", status: "draft",
+  updated: "2026-10-18", format: "16:9 · 1920×1080 · 30 fps · 30 s", pipeline: "A/B Hybrid · Code + UI Cards",
+  concept: "From raw job postings to razor-sharp market telemetry: how top engineers and analysts benchmark tech demand, salaries, and skill pairings with StackCheck.",
+  mood: ["precision", "authoritative", "high-velocity", "modern-saas"],
+  feelsLike: ["Recipe C (SaaS Product Launch, Slack/Linear style) with floating 3D telemetry cards & glowing strata cyan accents"],
+  notLike: ["corporate stock templates", "slow slideshows", "generic AI slop"],
+  palette: [
+    { name: "Obsidian Slate", hex: "#0F172A", role: "bg", use: "Main dark canvas & card base" },
+    { name: "Deep Space Base", hex: "#0B0F19", role: "bg", use: "Underlying vignette canvas" },
+    { name: "Sky Cyan", hex: "#38BDF8", role: "accent", use: "Stratum 1 & hero keyword highlights" },
+    { name: "Cobalt Sky", hex: "#0EA5E9", role: "primary", use: "Stratum 2 & telemetry vectors" },
+    { name: "Deep Azure", hex: "#0284C7", role: "secondary", use: "Stratum 3 & telemetry accents" },
+    { name: "Crisp White", hex: "#F8FAFC", role: "text", use: "Primary typography" },
+    { name: "Muted Slate", hex: "#94A3B8", role: "secondary", use: "Subtitles & secondary stats" }
+  ],
+  fonts: [
+    { family: "Display (Inter / System Sans)", file: "", weight: 800, role: "display", use: "Hero headlines & wordmark", sample: "WHAT TECH SKILLS ARE ACTUALLY HIRING?", license: "OFL" },
+    { family: "Mono (JetBrains Mono / System)", file: "", weight: 600, role: "mono", use: "Terminal HUD & telemetry metrics", sample: "$ stackcheck --live --port=8501", license: "OFL" }
+  ],
+  sample: { headline: "WHAT TECH SKILLS ARE ACTUALLY HIRING?", keyword: "ACTUALLY", caption: "Live tech market intelligence engine & analytics dashboard", sizes: { filler: 56, keyword: 120, hero: 160 } },
+  textTreatment: { outline: "2px #0B0F19", shadow: "0 10px 30px rgba(0,0,0,0.8)", glow: "0 0 24px rgba(56, 189, 248, 0.4)", backing: "none" },
+  motion: {
+    entrance: { ease: "cubic-bezier(.16,1,.3,1)", ms: 350 }, exit: { ease: "cubic-bezier(.32,0,.67,0)", ms: 220 },
+    stagger: 45, overshoot: "6 %", textAnim: ["pop", "blur", "decode", "slam"],
+    devices: [
+      "3-strata logo assembly with precision 45-degree chamfers",
+      "Floating 3D isometric dashboard cards with glowing cyan rims",
+      "Pulsing skill co-occurrence vector graphs",
+      "High-speed terminal HUD with live status checks"
+    ],
+    transitions: ["whip push", "cinematic hard cut", "terminal drop"],
+    camera: "slow forward push 2%/s, subtle isometric hover"
+  },
+  layout: { aspect: [16, 9], safeTop: 120, safeBottom: 120, safeRight: 120, captionY: "72%", maxWords: 6 },
+  textures: ["fine grain 2.5%", "subtle radial cyan vignette", "40px engineering grid"],
+  frames: [],
+  sound: [
+    { use: "text word reveal", type: "clean mechanical click 40–90 ms", level: "−8 dB vs VO" },
+    { use: "StackCheck lockup", type: "sub-bass thump -9 dB + harmonic chime", level: "−6 dB" },
+    { use: "telemetry connect", type: "high-frequency digital chirp / arpeggio", level: "−9 dB" },
+    { use: "terminal run", type: "rapid key clatter + success double-blip", level: "−7 dB" }
+  ],
+  bannedSounds: ["long cartoony whooshes", "arcade lasers", "cheesy corporate acoustic strumming"],
+  do: ["keep text concise and punchy", "every caption ≥ 4.5:1 contrast", "authentic live data in cards"],
+  dont: ["low-contrast gray text", "slow unmotivated transitions", "more than 2 font families"],
+  openQuestions: []
+};
+</script>
+<style>
+*{box-sizing:border-box;margin:0}body{font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0b0f19;color:#e2e8f0;padding:36px;max-width:1440px;margin:auto}
+h1{font-size:32px;font-weight:800;letter-spacing:-0.02em}h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin:44px 0 16px}
+.meta{color:#64748b;margin-top:6px;font-size:14px}.badge{display:inline-block;padding:3px 12px;border-radius:99px;font-size:12px;font-weight:600;margin-left:10px;vertical-align:middle}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(var(--w,180px),1fr))}.card{background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:18px}
+.sw{height:100px;border-radius:10px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.08);box-shadow:inset 0 1px 0 rgba(255,255,255,0.1)}.small{font-size:12px;color:#94a3b8;margin-top:4px}
+.chip{display:inline-block;background:#1e293b;color:#38bdf8;border:1px solid #334155;border-radius:99px;padding:4px 14px;margin:4px 4px 0 0;font-size:12px;font-weight:600}
+.stage{border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;border:1px solid #1e293b}
+.demo{display:flex;gap:16px;flex-wrap:wrap}.demo .stage{flex:1 1 240px;height:180px}.lbl{position:absolute;left:14px;top:10px;font:11px monospace;color:#64748b;text-transform:uppercase;letter-spacing:.08em}
+.fname{font-size:40px;font-weight:800;line-height:1.1;margin:2px 0 8px;letter-spacing:-0.03em}.fsample{font-size:22px;line-height:1.2;margin-bottom:10px}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #1e293b;vertical-align:top}th{color:#94a3b8;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+img{width:100%;border-radius:8px;display:block}.ok{color:#34d399;margin-bottom:6px}.bad{color:#f87171;margin-bottom:6px}ul{padding-left:18px}
+</style></head><body><div id="app"></div>
+<script>
+const esc = v => typeof v === 'string' ? v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : Array.isArray(v) ? v.map(esc) : (v && typeof v === 'object') ? Object.fromEntries(Object.entries(v).map(([a,b]) => [a, esc(b)])) : v;
+const D = esc(DESIGN), $ = h => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content; };
+const role = r => (D.palette.find(p => p.role === r) || D.palette[0] || {hex:'#000'}).hex;
+const lum = h => { const c = h.replace('#','').match(/../g).map(x => parseInt(x,16)/255).map(v => v <= .03928 ? v/12.92 : ((v+.055)/1.055)**2.4); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
+const cr = (a,b) => { const [x,y] = [lum(a),lum(b)].sort((m,n)=>n-m); return (x+.05)/(y+.05); };
+const bg = role('bg'), tx = role('text'), ac = role('accent'), pr = role('primary'), S = D.sample;
+const kw = s => s.replace(S.keyword, `<span style="color:${ac};text-shadow:0 0 20px rgba(56,189,248,0.5)">${S.keyword}</span>`);
+const sec = (t, body, show = true) => show ? `<h2>${t}</h2>${body}` : '';
+let h = `<h1>${D.project} — Launch Video Design System <span class="badge" style="background:${D.status==='approved'?'#065f46':'#854d0e'};color:#f8fafc">${D.status}</span></h1>
+<div class="meta">${D.version} · ${D.format} · updated ${D.updated} · ${D.pipeline}</div>`
++ sec('Concept & Feel', `<div class="card"><div style="font-size:20px;font-weight:600;margin-bottom:12px;line-height:1.4">${D.concept}</div>${D.mood.map(m=>`<span class="chip">${m}</span>`).join('')}
+  <div class="small" style="margin-top:16px;line-height:1.6"><b>Feels like:</b> ${D.feelsLike.join(' · ')}<br><b>Never like:</b> ${D.notLike.join(' · ')}</div></div>`)
++ sec('Official Brand Palette', `<div class="grid">${D.palette.map(p=>`<div class="card"><div class="sw" style="background:${p.hex}"></div><b>${p.name}</b><div class="small">${p.hex} · ${p.use||p.role}${p.role!=='bg'&&cr(p.hex,bg)<3?' · <span class="bad">low contrast</span>':''}</div></div>`).join('')}</div>`)
++ sec('Typography & Live Display', `<div class="stage" style="background:${bg};flex-direction:column;padding:44px 24px;text-align:center;margin-bottom:16px;border:1px solid #1e293b;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)">
+  <div style="font-size:38px;font-weight:800;letter-spacing:-0.03em;color:${tx};line-height:1.15">${kw(S.headline)}</div>
+  <div style="font-size:18px;color:#94a3b8;margin-top:16px;letter-spacing:-0.01em">${S.caption}</div></div>
+  <div class="grid" style="--w:340px">${D.fonts.map((f,i)=>`<div class="card"><div class="fname" style="font-weight:${f.weight||400};color:#f8fafc">${f.family}</div>
+  <div class="fsample" style="font-weight:${f.weight||400};color:${f.role==='display'||f.role==='keyword'?ac:'#cbd5e1'}">${f.sample||S.keyword}</div>
+  <div class="small"><b style="color:#f8fafc">${f.use||f.role}</b></div></div>`).join('')}</div>`)
++ sec('Live Motion & Signature Effects', `<div class="demo">${D.motion.textAnim.map(a=>`<div class="stage" style="background:${bg}"><span class="lbl">${a}</span><div class="anim-${a}" style="font-size:42px;font-weight:800;color:${tx}">${S.keyword}</div></div>`).join('')}</div>
+  <div class="card" style="margin-top:16px"><b style="color:#f8fafc">Signature Devices:</b><ul style="margin-top:8px;line-height:1.7">${D.motion.devices.map(x=>`<li>${x}</li>`).join('')}</ul><div class="small" style="margin-top:10px"><b>Transitions:</b> ${D.motion.transitions.join(' · ')} &nbsp;|&nbsp; <b>Camera:</b> ${D.motion.camera}</div></div>`)
++ sec('Sound Identity & Mix Guidelines', `<div class="card"><table><tr><th>When / Cue</th><th>Sound Character</th><th>Target Mix Level</th></tr>${D.sound.map(r=>`<tr><td><b>${r.use}</b></td><td>${r.type}</td><td><span class="chip" style="background:#0f172a">${r.level}</span></td></tr>`).join('')}</table><div class="small" style="margin-top:14px"><b class="bad">Banned Sounds:</b> ${D.bannedSounds.join(' · ')}</div></div>`)
++ sec('Production Do & Don\'t', `<div class="grid" style="--w:360px"><div class="card">${D.do.map(x=>`<div class="ok">✓ ${x}</div>`).join('')}</div><div class="card">${D.dont.map(x=>`<div class="bad">✕ ${x}</div>`).join('')}</div></div>`);
+document.getElementById('app').append($(h));
+const E = D.motion.entrance, k = `${E.ms*3+600}ms ${E.ease} infinite`;
+document.head.append($(`<style>
+.anim-pop{animation:pop ${k}}@keyframes pop{0%{transform:scale(0)}25%{transform:scale(1.06)}33%,80%{transform:scale(1)}100%{transform:scale(0)}}
+.anim-blur{animation:blr ${k}}@keyframes blr{0%{filter:blur(12px);opacity:0;transform:translateY(20px)}33%,80%{filter:blur(0);opacity:1;transform:none}100%{opacity:0}}
+.anim-slam{animation:slm ${k}}@keyframes slm{0%{transform:scale(2.2);opacity:0}20%{transform:scale(.95,1.05);opacity:1}30%,80%{transform:scale(1)}100%{opacity:0}}
+.anim-slam,.anim-pop{color:${ac}!important;text-shadow:0 0 20px rgba(56,189,248,0.6)}
+</style>`));
+document.querySelectorAll('.anim-decode').forEach(el => { const w = el.textContent; let f = 0; setInterval(() => { f = (f+1)%40; el.textContent = f < 20 ? w.split('').map((c,i) => i < f/2.5 ? c : (Math.random()<.5?'0':'1')).join('') : w; el.style.color = f >= 20 ? ac : pr; }, 50); });
+</script></body></html>

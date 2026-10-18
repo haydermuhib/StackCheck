@@ -27,3 +27,6 @@ exports/
 # IDE
 .vscode/
 .idea/
+
+# Video pipeline cache
+video/cache/

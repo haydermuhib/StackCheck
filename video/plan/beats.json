@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "audio_file": "video/assets/vo/vo_v1.mp3",
+  "total_duration": 31.007,
+  "fps": 30,
+  "scenes": [
+    {
+      "id": "scene_1_hook",
+      "start": 0.0,
+      "end": 4.10,
+      "text": "What tech skills are engineering teams actually hiring for right now?",
+      "keywords": ["WHAT TECH SKILLS", "ARE ENGINEERING TEAMS", "ACTUALLY HIRING FOR?"],
+      "cues": {
+        "text_in": 0.2,
+        "accent_pop": 1.6,
+        "transition_out": 3.8
+      }
+    },
+    {
+      "id": "scene_2_problem",
+      "start": 4.10,
+      "end": 8.10,
+      "text": "Stop guessing from hype cycles and outdated salary surveys.",
+      "keywords": ["HYPE CYCLES", "BIASED SURVEYS", "UNVERIFIED STATS"],
+      "cues": {
+        "tags_enter": 4.25,
+        "jitter_start": 5.4,
+        "collapse_shatter": 7.3,
+        "transition_out": 7.95
+      }
+    },
+    {
+      "id": "scene_3_reveal",
+      "start": 8.10,
+      "end": 15.20,
+      "text": "Meet StackCheck. The open-source market intelligence engine that turns live job posts into instant competitive insight.",
+      "keywords": ["StackCheck", "MARKET INTELLIGENCE ENGINE"],
+      "cues": {
+        "logo_strata_build": 8.2,
+        "sub_impact": 8.35,
+        "wordmark_snap": 8.8,
+        "card_glide_in": 9.7,
+        "data_bars_grow": 11.0,
+        "transition_out": 14.8
+      }
+    },
+    {
+      "id": "scene_4_telemetry",
+      "start": 15.20,
+      "end": 22.50,
+      "text": "Analyze framework dominance, uncover lucrative skill pairings, and benchmark compensation curves across global markets.",
+      "keywords": ["COMPENSATION CURVES", "SKILL PAIRINGS", "LIVE TELEMETRY"],
+      "cues": {
+        "comp_card_in": 15.3,
+        "salary_curve_draw": 16.2,
+        "pairing_card_in": 17.8,
+        "network_nodes_pulse": 19.0,
+        "transition_out": 22.1
+      }
+    },
+    {
+      "id": "scene_5_privacy",
+      "start": 22.50,
+      "end": 27.80,
+      "text": "Zero cloud dependencies. Run the interactive dashboard locally in one command.",
+      "keywords": ["ZERO CLOUD", "100% LOCAL", "$ stackcheck"],
+      "cues": {
+        "terminal_drop": 22.6,
+        "type_command": 23.2,
+        "check_1": 24.8,
+        "check_2": 25.3,
+        "check_3": 25.9,
+        "transition_out": 27.4
+      }
+    },
+    {
+      "id": "scene_6_outro",
+      "start": 27.80,
+      "end": 31.00,
+      "text": "Check your stack today. Download free on GitHub.",
+      "keywords": ["StackCheck", "github.com/haydermuhib/StackCheck"],
+      "cues": {
+        "hero_lockup_in": 27.9,
+        "glow_aura_pulse": 28.3,
+        "badges_pop": 29.1,
+        "url_highlight": 29.5,
+        "fade_to_black": 30.7
+      }
+    }
+  ],
+  "sfx_cues": [
+    { "t": 0.2, "type": "mechanical_tick", "desc": "Word sequence start" },
+    { "t": 1.6, "type": "accent_blip", "desc": "Actually hiring pop" },
+    { "t": 4.3, "type": "friction_whoosh", "desc": "Problem scene entrance" },
+    { "t": 7.3, "type": "shatter_glitch", "desc": "Buzzword noise collapses" },
+    { "t": 8.35, "type": "sub_impact", "desc": "StackCheck logo hit -9dB" },
+    { "t": 9.7, "type": "glass_glide", "desc": "Executive dashboard card enters" },
+    { "t": 15.3, "type": "data_chirp", "desc": "Salary curve reveals" },
+    { "t": 17.8, "type": "network_arpeggio", "desc": "Skill pairing nodes connect" },
+    { "t": 22.6, "type": "terminal_slam", "desc": "Glass terminal drops in" },
+    { "t": 24.8, "type": "success_beep_1", "desc": "Local SQLite check" },
+    { "t": 25.3, "type": "success_beep_2", "desc": "Live feed check" },
+    { "t": 25.9, "type": "success_beep_3", "desc": "Streamlit 8501 check" },
+    { "t": 27.9, "type": "harmonic_chime", "desc": "Outro logo resolve" }
+  ]
+}

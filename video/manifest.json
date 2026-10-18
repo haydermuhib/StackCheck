@@ -1,0 +1,47 @@
+[
+  {
+    "path": "video/assets/brand/logo.svg",
+    "type": "image/svg+xml",
+    "source_url": "local://assets/logo.svg",
+    "author": "Hayder Muhib",
+    "license": "MIT",
+    "license_file": "LICENSE",
+    "used_in": ["Scene 3", "Scene 6"]
+  },
+  {
+    "path": "video/assets/brand/stackcheck-symbol-color.svg",
+    "type": "image/svg+xml",
+    "source_url": "local://assets/brand/stackcheck-symbol-color.svg",
+    "author": "Hayder Muhib",
+    "license": "MIT",
+    "license_file": "LICENSE",
+    "used_in": ["Scene 3", "Scene 6"]
+  },
+  {
+    "path": "video/assets/screenshots/dashboard-executive.png",
+    "type": "image/png",
+    "source_url": "local://assets/screenshots/dashboard-executive.png",
+    "author": "StackCheck",
+    "license": "MIT",
+    "license_file": "LICENSE",
+    "used_in": ["Scene 3"]
+  },
+  {
+    "path": "video/assets/screenshots/dashboard-compensation.png",
+    "type": "image/png",
+    "source_url": "local://assets/screenshots/dashboard-compensation.png",
+    "author": "StackCheck",
+    "license": "MIT",
+    "license_file": "LICENSE",
+    "used_in": ["Scene 4"]
+  },
+  {
+    "path": "video/assets/screenshots/dashboard-explorer.png",
+    "type": "image/png",
+    "source_url": "local://assets/screenshots/dashboard-explorer.png",
+    "author": "StackCheck",
+    "license": "MIT",
+    "license_file": "LICENSE",
+    "used_in": ["Scene 4"]
+  }
+]

@@ -55,6 +55,21 @@ StackCheck collects live job listings from HiringCafe, extracts technical requir
 
 ---
 
+## Product walkthrough
+
+<p align="center">
+  <video src="assets/video/stackcheck-launch.mp4" poster="assets/video/poster.png" width="100%" controls>
+    <a href="assets/video/stackcheck-launch.mp4">
+      <img src="assets/video/poster.png" alt="StackCheck Product Launch Video" width="100%" />
+    </a>
+  </video>
+</p>
+<p align="center">
+  <sub><b>Watch the 30-second launch walkthrough:</b> Real-time tech demand, compensation percentiles, and skill co-occurrence curves running 100% locally.</sub>
+</p>
+
+---
+
 ## Web dashboard interface
 
 | Executive market overview | Geographic compensation distribution |
