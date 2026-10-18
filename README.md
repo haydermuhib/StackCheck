@@ -17,23 +17,49 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License: MIT" /></a>
   <a href="https://github.com/haydermuhib/StackCheck/releases"><img src="https://img.shields.io/badge/Version-0.2.1-cyan?style=flat-square" alt="v0.2.1" /></a>
   <a href="https://github.com/haydermuhib/StackCheck"><img src="https://img.shields.io/badge/Architecture-Portable%20Binary-purple?style=flat-square" alt="Portable Binary" /></a>
+  <a href="https://orcid.org/0009-0008-7989-6116"><img src="https://img.shields.io/badge/ORCID-0009--0008--7989--6116-green.svg" alt="ORCID" /></a>
+  <a href="https://buymeacoffee.com/haydermuhib"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-yellow.svg?logo=buy-me-a-coffee" alt="Buy Me A Coffee" /></a>
 </p>
 
 ---
+
+<style>
+  /* Hide scrollbars while preserving horizontal scrollability */
+  .no-scrollbar,
+  pre,
+  pre code {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar,
+  pre::-webkit-scrollbar,
+  pre code::-webkit-scrollbar {
+    display: none;
+  }
+</style>
 
 ## Quick installation
 
 Install the standalone binary without external dependencies:
 
 ### macOS and Linux
+<div class="no-scrollbar" style="overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;">
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash
 ```
 
+</div>
+
 ### Windows (PowerShell)
+<div class="no-scrollbar" style="overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;">
+
 ```powershell
 curl.exe -L "https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe" -o StackCheck.exe; .\StackCheck.exe
 ```
+
+</div>
 
 You can also download [StackCheck-windows-x64.exe](https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe) directly from GitHub Releases. If Windows SmartScreen prompts on first launch, select **More info**, then **Run anyway**.
 
@@ -253,7 +279,19 @@ pytest tests/
 | `stackcheck update` | Update binary from GitHub Releases |
 | [index.html](index.html) | Landing page |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines and developer setup |
+| [CITATION.cff](CITATION.cff) | Citation metadata |
 | [LICENSE](LICENSE) | MIT License |
+
+---
+
+## Support & Citation
+
+If you find StackCheck useful, consider supporting the project or citing it in your research and benchmarks:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-yellow.svg?logo=buy-me-a-coffee)](https://buymeacoffee.com/haydermuhib)
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0008--7989--6116-green.svg)](https://orcid.org/0009-0008-7989-6116)
+
+See [CITATION.cff](CITATION.cff) for full citation details.
 
 ---
 

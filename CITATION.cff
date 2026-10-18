@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software or its datasets, please cite it as below."
+title: "StackCheck: Local-First Tech Stack Intelligence and Salary Benchmarking"
+version: 0.2.1
+date-released: 2026-10-09
+authors:
+  - name: "Haider Ali"
+    orcid: "https://orcid.org/0009-0008-7989-6116"
+url: "https://github.com/haydermuhib/StackCheck"
+keywords:
+  - tech-stack
+  - salary-benchmarks
+  - job-market-analysis
+  - sqlite
+  - developer-tools
