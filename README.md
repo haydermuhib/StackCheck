@@ -58,12 +58,21 @@ StackCheck collects live job listings from HiringCafe, extracts technical requir
 ## Product walkthrough
 
 <p align="center">
-  <a href="assets/video/stackcheck-launch.mp4" title="Click to watch full 1080p walkthrough with sound">
+  <a href="https://youtu.be/DlfxeNpdE6M" title="Watch the 30-second walkthrough on YouTube">
     <img src="assets/video/launch-preview.gif" alt="StackCheck Product Walkthrough" width="100%" />
   </a>
 </p>
 <p align="center">
-  <sub><b>Watch the 30-second launch walkthrough:</b> Real-time tech demand, compensation percentiles, and skill co-occurrence curves. Click the animation to open or download the full 1080p video with audio narration.</sub>
+  <a href="https://youtu.be/DlfxeNpdE6M" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/badge/YouTube-Watch%20Walkthrough%20(0:31)-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch on YouTube" />
+  </a>
+  &nbsp;
+  <a href="assets/video/stackcheck-launch.mp4">
+    <img src="https://img.shields.io/badge/Direct-1080p%20MP4-1e293b?style=for-the-badge&logo=quicktime&logoColor=white" alt="Download MP4" />
+  </a>
+</p>
+<p align="center">
+  <sub><b>Watch the 30-second launch walkthrough:</b> Real-time tech demand, compensation percentiles, and skill co-occurrence curves. Click the animation or button above to watch with voiceover on YouTube.</sub>
 </p>
 
 ---
