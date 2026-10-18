@@ -23,43 +23,20 @@
 
 ---
 
-<style>
-  /* Hide scrollbars while preserving horizontal scrollability */
-  .no-scrollbar,
-  pre,
-  pre code {
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .no-scrollbar::-webkit-scrollbar,
-  pre::-webkit-scrollbar,
-  pre code::-webkit-scrollbar {
-    display: none;
-  }
-</style>
-
 ## Quick installation
 
 Install the standalone binary without external dependencies:
 
 ### macOS and Linux
-<div class="no-scrollbar" style="overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;">
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/haydermuhib/StackCheck/main/install.sh | bash
 ```
 
-</div>
-
 ### Windows (PowerShell)
-<div class="no-scrollbar" style="overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;">
-
 ```powershell
-curl.exe -L "https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe" -o StackCheck.exe; .\StackCheck.exe
+curl.exe -L "https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe" -o StackCheck.exe
+.\StackCheck.exe
 ```
-
-</div>
 
 You can also download [StackCheck-windows-x64.exe](https://github.com/haydermuhib/StackCheck/releases/latest/download/StackCheck-windows-x64.exe) directly from GitHub Releases. If Windows SmartScreen prompts on first launch, select **More info**, then **Run anyway**.
 
